@@ -9,18 +9,19 @@ const Homepage = () => {
         <span className="bg-[#545BF8] border border-white/20 text-white px-3 py-1 rounded-full text-xs font-medium">
           New
         </span>
-        <p className="text-xs text-gray-200">Built for modern SaaS products</p>
+        <p className="text-xs text-gray-200">Built your order rental platfrom</p>
       </div>
 
       {/* Main Heading */}
       <h1 className="text-4xl md:text-6xl lg:text-7xl text-center font-bold max-w-4xl mt-6 bg-linear-to-r from-[#858AFF] via-indigo-200 to-white text-transparent bg-clip-text leading-tight">
-        Build smarter products with AI app builder
+        GearUp is a modern equipment rental platform
       </h1>
 
       {/* Subtitle */}
       <p className="text-slate-300 text-sm md:text-base text-center max-w-lg mt-4 leading-relaxed">
-        A modern AI platform to generate content, automate workflows and
-        accelerate decision-making for modern teams.
+        Rent top-quality sports and outdoor equipment on demand. Choose your
+        rental dates, complete secure payments, and get ready for your next
+        adventure without the high cost of buying gear.
       </p>
 
       {/* Call to Action Buttons */}
