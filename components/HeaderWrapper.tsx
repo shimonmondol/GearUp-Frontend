@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import Navbar from '@/components/Navbar';
 
 const hiddenRoutes = ['/login', '/signup'];
 
@@ -11,6 +12,7 @@ const HeaderWrapper = () => {
   if (hiddenRoutes.includes(pathname)) {
     return null;
   }
+  return <Navbar />;
 };
 
 export default HeaderWrapper;
