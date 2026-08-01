@@ -129,7 +129,7 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
   const categoryName = typeof gear.category === 'object' ? gear.category?.name : gear.category;
 
   return (
-    <div className="max-w-4xl mx-auto p-4 my-6">
+    <div className="max-w-4xl mx-auto p-4 mt-26">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-6 rounded-lg border shadow-sm">
         {/* Left Side: Gear Image */}
         <div>
@@ -146,7 +146,7 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
             {categoryName || 'General'}
           </span>
 
-          <h1 className="text-2xl font-bold mt-2">{gear.title}</h1>
+          <h1 className="text-2xl font-bold text-black mt-2">{gear.title}</h1>
           {gear.brand && <p className="text-xs text-gray-500">Brand: {gear.brand}</p>}
           <p className="text-gray-600 text-sm mt-3">{gear.description}</p>
 
@@ -158,22 +158,22 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
             {error && <p className="text-red-500 text-xs">{error}</p>}
 
             <div>
-              <label className="block text-xs font-semibold mb-1">Start Date</label>
+              <label className="block text-xs text-gray-800 font-semibold mb-1">Start Date</label>
               <input
                 type="date"
                 required
-                className="w-full border p-2 rounded text-sm"
+                className="w-full border p-2 rounded text-sm text-gray-500"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold mb-1">End Date</label>
+              <label className="block text-xs font-semibold text-gray-800 mb-1">End Date</label>
               <input
                 type="date"
                 required
-                className="w-full border p-2 rounded text-sm"
+                className="w-full border p-2 rounded text-sm text-gray-500"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
               />
@@ -189,7 +189,7 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
             <button
               type="submit"
               disabled={!gear.isAvailable || bookingLoading}
-              className="w-full bg-blue-600 text-white py-2.5 rounded font-semibold hover:bg-blue-700 disabled:bg-gray-400"
+              className="w-full bg-blue-600 text-white py-2.5 rounded font-semibold hover:bg-blue-700 disabled:bg-gray-400 cursor-pointer"
             >
               {bookingLoading ? 'Processing...' : gear.isAvailable ? 'Rent Now' : 'Currently Unavailable'}
             </button>
