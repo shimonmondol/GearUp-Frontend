@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GearUp | Rent Sports & Outdoor Gear",
+  title: "GearUp-Frontend",
   description: "Instant rental service for sports equipment and outdoor gear.",
 };
 
