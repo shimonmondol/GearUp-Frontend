@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { toast } from "react-toastify";
 import api from "@/lib/axios";
 
 const LoginPage = () => {
@@ -11,19 +12,13 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
     try {
       const res = await api.post("/api/auth/login", { email, password });
-
-      console.log("--- FULL BACKEND RESPONSE DATA ---");
-      console.log(JSON.stringify(res.data, null, 2));
-
       const resData = res.data;
 
       let token =
@@ -38,9 +33,7 @@ const LoginPage = () => {
       const role = user?.role || resData?.role || "CUSTOMER";
 
       if (!token) {
-        throw new Error(
-          `Token key not found! Keys in response: ${Object.keys(resData || {}).join(", ")}`,
-        );
+        throw new Error("Token missing");
       }
 
       // Save credentials in Cookies
@@ -50,14 +43,23 @@ const LoginPage = () => {
         expires: 7,
       });
 
-      alert("Login successful!");
+      // 🌟 Successful login toast in center
+      toast.success("Login Successful!", {
+        position: "top-center",
+        autoClose: 3000,
+      });
 
-      // 📍 Redirect directly to home page after successful login
-      router.push("/");
-      router.refresh(); // Refresh to ensure Navbar updates cookie state
+      // Redirect after 1.5 seconds
+      setTimeout(() => {
+        router.push("/");
+        router.refresh();
+      }, 3000);
     } catch (err: any) {
-      console.error("Login Error:", err);
-      setError(err.response?.data?.message || err.message || "Login failed!");
+      console.error("Login Error Details:", err);
+      toast.error("Login Failed", {
+        position: "top-center",
+        autoClose: 3000,
+      });
     } finally {
       setLoading(false);
     }
@@ -71,15 +73,6 @@ const LoginPage = () => {
             <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 text-center md:text-2xl dark:text-white">
               Login
             </h1>
-
-            {error && (
-              <div
-                className="p-3 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 border border-red-300 dark:border-red-800"
-                role="alert"
-              >
-                {error}
-              </div>
-            )}
 
             <form onSubmit={handleLogin} className="space-y-4 md:space-y-6">
               <div>
@@ -144,5 +137,4 @@ const LoginPage = () => {
     </section>
   );
 };
-
 export default LoginPage;

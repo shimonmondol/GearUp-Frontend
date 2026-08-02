@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 import api from "@/lib/axios";
 
 const SignUpPage = () => {
@@ -12,21 +13,28 @@ const SignUpPage = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 Characters", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+      return;
+    }
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      toast.error("Passwords do not match", {
+        position: "top-center",
+        autoClose: 3000,
+      });
       return;
     }
 
     setLoading(true);
 
     try {
-      // 📍 role: "customer" (lowercase) করে দেওয়া হয়েছে
+      // API Call
       await api.post("/api/auth/register", {
         name,
         email,
@@ -34,49 +42,45 @@ const SignUpPage = () => {
         role: "customer",
       });
 
-      alert("Registration successful! Please log in.");
-      router.push("/login");
+      toast.success("SignUp Successful", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+
+      setTimeout(() => {
+        router.push("/login");
+      }, 3000);
     } catch (err: any) {
-      console.log(
-        "Detailed Server Error:",
-        JSON.stringify(err.response?.data, null, 2)
-      );
+      console.error("Signup Error Details:", err.response?.data);
 
       const serverData = err.response?.data;
-
-      // যদি errorDetails থাকে তাহলে সেখান থেকে মেসেজ তুলে আনা
+      let errorMsg = "SignUp Failed";
       if (serverData?.errorDetails && Array.isArray(serverData.errorDetails)) {
-        const detailMsgs = serverData.errorDetails
-          .map((item: any) => `${item.field}: ${item.message}`)
+        errorMsg = serverData.errorDetails
+          .map((item: any) => item.message)
           .join(", ");
-        setError(detailMsgs);
-      } else {
-        setError(
-          serverData?.message || err.message || "Registration failed"
-        );
+      } else if (serverData?.message) {
+        errorMsg = Array.isArray(serverData.message)
+          ? serverData.message.join(", ")
+          : serverData.message;
       }
+      toast.error(errorMsg, {
+        position: "top-center",
+        autoClose: 3000,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <section className="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col justify-center pt-20 pb-10">
+    <section className="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col justify-center pt-6 pb-10">
       <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto w-full md:h-screen lg:py-0">
         <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
           <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
             <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 text-center md:text-2xl dark:text-white">
               Sign Up
             </h1>
-
-            {error && (
-              <div
-                className="p-3 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 border border-red-300 dark:border-red-800"
-                role="alert"
-              >
-                {error}
-              </div>
-            )}
 
             <form onSubmit={handleSignup} className="space-y-4 md:space-y-6">
               <div>

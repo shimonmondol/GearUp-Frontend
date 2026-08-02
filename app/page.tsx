@@ -21,25 +21,6 @@ const Homepage = () => {
         rental dates, complete secure payments, and get ready for your next
         adventure without the high cost of buying gear.
       </p>
-
-      {/* Call to Action Buttons */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 mt-8 text-sm">
-        <Link
-          href="/signup"
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 rounded-full transition-all cursor-pointer shadow-lg shadow-indigo-500/25 active:scale-95"
-        >
-          Get started for free
-        </Link>
-
-        <Link
-          href="/templates"
-          className="p-px rounded-full bg-linear-to-r from-white/80 to-white/20 inline-block transition-all hover:scale-105 active:scale-95"
-        >
-          <div className="bg-slate-900 hover:bg-slate-800 text-white font-medium px-6 py-3 rounded-full transition cursor-pointer">
-            Explore template
-          </div>
-        </Link>
-      </div>
     </section>
   );
 };

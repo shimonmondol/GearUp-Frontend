@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import Cookies from 'js-cookie';
+import { toast } from 'react-toastify';
 
 const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
-
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
@@ -44,10 +44,16 @@ const Navbar = () => {
     Cookies.remove('accessToken');
     Cookies.remove('userRole');
     Cookies.remove('userName');
-
     setIsLoggedIn(false);
     closeMenu();
-    alert('Logged out successfully!');
+
+    // 🌟 React Toastify Alert for Logout
+    toast.success('Logged Out Successfully!', {
+      position: 'top-center',
+      autoClose: 3000,
+    });
+
+    // Redirect to home page
     router.push('/');
     router.refresh();
   };
