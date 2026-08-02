@@ -2,13 +2,16 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 
 const SignUpPage = () => {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -20,19 +23,45 @@ const SignUpPage = () => {
       return;
     }
 
-    try {
-      // API call
-      await api.post("/auth/register", { name, email, password });
+    setLoading(true);
 
-      // Redirect to login on success
-      window.location.href = "/login";
+    try {
+      // 📍 role: "customer" (lowercase) করে দেওয়া হয়েছে
+      await api.post("/api/auth/register", {
+        name,
+        email,
+        password,
+        role: "customer",
+      });
+
+      alert("Registration successful! Please log in.");
+      router.push("/login");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Registration failed");
+      console.log(
+        "Detailed Server Error:",
+        JSON.stringify(err.response?.data, null, 2)
+      );
+
+      const serverData = err.response?.data;
+
+      // যদি errorDetails থাকে তাহলে সেখান থেকে মেসেজ তুলে আনা
+      if (serverData?.errorDetails && Array.isArray(serverData.errorDetails)) {
+        const detailMsgs = serverData.errorDetails
+          .map((item: any) => `${item.field}: ${item.message}`)
+          .join(", ");
+        setError(detailMsgs);
+      } else {
+        setError(
+          serverData?.message || err.message || "Registration failed"
+        );
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <section className="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col justify-center">
+    <section className="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col justify-center pt-20 pb-10">
       <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto w-full md:h-screen lg:py-0">
         <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
           <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
@@ -107,11 +136,31 @@ const SignUpPage = () => {
                 />
               </div>
 
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                >
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  id="confirmPassword"
+                  placeholder="••••••••"
+                  className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-blue-600 focus:border-blue-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+
               <button
                 type="submit"
-                className="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition-colors cursor-pointer"
+                disabled={loading}
+                className="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition-colors cursor-pointer disabled:bg-gray-400 dark:disabled:bg-gray-600"
               >
-                Sign up
+                {loading ? "Signing up..." : "Sign up"}
               </button>
 
               <p className="text-sm font-light text-gray-500 dark:text-gray-400">

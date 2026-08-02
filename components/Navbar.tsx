@@ -158,7 +158,7 @@ const Navbar = () => {
                 <li>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left md:w-auto block py-2 px-3 text-red-300 rounded hover:bg-blue-800 cursor-pointer hover:text-red-200 md:hover:bg-transparent md:p-0 focus:outline-none"
+                    className="w-full text-left md:w-auto block py-2 px-3 text-white rounded hover:bg-blue-800 cursor-pointer hover:text-red-500 md:hover:bg-transparent md:p-0 focus:outline-none"
                   >
                     Logout
                   </button>
@@ -179,7 +179,7 @@ const Navbar = () => {
                   <Link
                     href="/signup"
                     onClick={closeMenu}
-                    className="block py-2 px-3 text-white rounded hover:bg-blue-800 md:bg-blue-700 md:hover:bg-blue-600 md:py-1.5 md:px-4 md:rounded focus:outline-none focus:ring-0"
+                    className="block py-2 px-3 text-white rounded hover:bg-blue-800 md:hover:bg-transparent md:border-0 md:hover:text-blue-200 md:p-0 focus:outline-none focus:ring-0"
                   >
                     Sign Up
                   </Link>
