@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Cookies from "js-cookie";
+import { toast } from "react-toastify";
 import api from "@/lib/axios";
 import { getGearImage } from "@/lib/getImage";
 
@@ -27,6 +28,7 @@ interface IGear {
 const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
   const resolvedParams = use(params);
   const router = useRouter();
+  const pathname = usePathname();
 
   const [gear, setGear] = useState<IGear | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,25 +84,40 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
 
     // 📍 ১. লগইন চেক
     if (!token) {
-      alert("Please login to rent gear");
-      router.push("/login");
+      toast.warning("Please login to rent gear", {
+        position: "top-center",
+        autoClose: 2000,
+      });
+      setTimeout(() => {
+        router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      }, 1500);
       return;
     }
 
-    // 📍 ২. প্রোভাইডার চেক (Provider গিয়ার রেন্ট করতে পারবে না)
+    // 📍 ২. প্রোভাইডার চেক
     if (userRole === "PROVIDER") {
-      alert("Providers cannot rent gear. Please login with a Customer account.");
-      setError("Providers are not allowed to rent gear items.");
+      const providerError =
+        "Providers cannot rent gear. Please login with a Customer account.";
+      toast.error(providerError, { position: "top-center", autoClose: 3000 });
+      setError(providerError);
+      return;
+    }
+
+    const targetGearId = gear?.id || (gear as any)?._id;
+    if (!targetGearId) {
+      toast.error("Gear ID is missing!", { position: "top-center" });
       return;
     }
 
     const total = calculateTotal();
     if (total <= 0) {
-      setError("End date must be after Start date");
+      const dateError = "End date must be after Start date";
+      toast.error(dateError, { position: "top-center", autoClose: 3000 });
+      setError(dateError);
       return;
     }
 
-    // দিন সংখ্যা গণনা
+    // দিন সংখ্যা
     const startObj = new Date(startDate);
     const endObj = new Date(endDate);
     const diffTime = endObj.getTime() - startObj.getTime();
@@ -109,42 +126,55 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
     setBookingLoading(true);
 
     try {
-      // 📍 ব্যাকএন্ড ভ্যালিডেশন অনুযায়ী ISO Date Strings ও All Required Keys
       const payload = {
-        gearId: gear?.id,
-        startDate: new Date(startDate).toISOString(), // "2026-08-03T00:00:00.000Z"
-        endDate: new Date(endDate).toISOString(),   // "2026-08-05T00:00:00.000Z"
+        gearId: String(targetGearId),
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString(),
         totalPrice: Number(total),
         rentalDays: days,
+        gearItems: [
+          {
+            gearId: String(targetGearId),
+            quantity: 1,
+          },
+        ],
       };
 
-      console.log("Sending Formatted Payload:", payload);
+      console.log("🚀 PAYLOAD SENT TO BACKEND:", payload);
 
       await api.post("/api/rentals", payload);
 
-      alert("Rental Order placed successfully!");
-      router.push("/dashboard/customer");
+      toast.success("Order placed successfully!", {
+        position: "top-center",
+        autoClose: 1500,
+      });
+
+      // 📍 সরাসরি Customer Dashboard পেজে নিয়ে যাওয়ার লজিক
+      setTimeout(() => {
+        router.push("/dashboard/customer");
+      }, 1000);
     } catch (err: any) {
-      console.log("--- BACKEND ERROR RESPONSE ---");
-      console.log(err.response?.data);
+      console.log(
+        "❌ FULL BACKEND ERROR RESPONSE:",
+        JSON.stringify(err.response?.data, null, 2)
+      );
 
       const errorData = err.response?.data;
-
-      // ব্যাকএন্ডের Zod / Express ভ্যালিডেশন এরর মেসেজ নিখুঁতভাবে বের করা
       let message = "Missing required fields for rental order";
 
       if (typeof errorData?.message === "string") {
         message = errorData.message;
       } else if (Array.isArray(errorData?.errorSources)) {
-        // Zod validation sources
-        message = errorData.errorSources
-          .map((s: any) => `${s.path}: ${s.message}`)
-          .join(", ");
+        message = errorData.errorSources.map((s: any) => `${s.path}: ${s.message}`).join(", ");
       } else if (Array.isArray(errorData?.errors)) {
         message = errorData.errors.map((e: any) => e.message || e).join(", ");
       }
 
       setError(message);
+      toast.error(message, {
+        position: "top-center",
+        autoClose: 3000,
+      });
     } finally {
       setBookingLoading(false);
     }
@@ -167,7 +197,7 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
         </p>
         <button
           onClick={() => router.push("/gear")}
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"
+          className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 cursor-pointer"
         >
           Back to Gear List
         </button>
@@ -245,7 +275,7 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
 
             {calculateTotal() > 0 && (
               <div className="bg-gray-50 p-3 rounded text-sm font-semibold flex justify-between">
-                <span>Total Amount:</span>
+                <span className="text-black">Total Amount:</span>
                 <span className="text-blue-600">৳{calculateTotal()}</span>
               </div>
             )}

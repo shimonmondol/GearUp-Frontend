@@ -2,13 +2,15 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
 import { toast } from "react-toastify";
 import api from "@/lib/axios";
 
 const LoginPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect") || "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,15 +45,12 @@ const LoginPage = () => {
         expires: 7,
       });
 
-      // 🌟 Successful login toast in center
-      toast.success("Login Successful!", {
+      toast.success("Login successful!", {
         position: "top-center",
         autoClose: 3000,
       });
-
-      // Redirect after 1.5 seconds
       setTimeout(() => {
-        router.push("/");
+        router.push(redirectUrl);
         router.refresh();
       }, 3000);
     } catch (err: any) {
@@ -137,4 +136,5 @@ const LoginPage = () => {
     </section>
   );
 };
+
 export default LoginPage;

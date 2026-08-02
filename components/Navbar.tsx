@@ -8,7 +8,8 @@ import { toast } from 'react-toastify';
 
 const Navbar = () => {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname(); // 📍 বর্তমান পেজের Path পাওয়ার জন্য
+
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
@@ -40,25 +41,22 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
-    // Remove cookies
     Cookies.remove('accessToken');
     Cookies.remove('userRole');
     Cookies.remove('userName');
+
     setIsLoggedIn(false);
     closeMenu();
 
-    // 🌟 React Toastify Alert for Logout
-    toast.success('Logged Out Successfully!', {
+    toast.success('Logged out successfully!', {
       position: 'top-center',
-      autoClose: 3000,
+      autoClose: 1500,
     });
 
-    // Redirect to home page
-    router.push('/');
+    // 📍 বর্তমান পাবলিক পেজেই রিফ্রেশ হয়ে থেকে যাবে
     router.refresh();
   };
 
-  // Get appropriate dashboard URL based on role
   const getDashboardLink = () => {
     if (userRole === 'ADMIN') return '/dashboard/admin';
     if (userRole === 'PROVIDER') return '/dashboard/provider';
@@ -86,7 +84,6 @@ const Navbar = () => {
         >
           <span className="sr-only">Open main menu</span>
           {isOpen ? (
-            /* Close (X) Icon */
             <svg
               className="w-6 h-6"
               fill="none"
@@ -102,7 +99,6 @@ const Navbar = () => {
               ></path>
             </svg>
           ) : (
-            /* Hamburger Icon */
             <svg
               className="w-6 h-6"
               fill="none"
@@ -120,7 +116,7 @@ const Navbar = () => {
           )}
         </button>
 
-        {/* Navigation Links (Responsive Container) */}
+        {/* Navigation Links */}
         <div
           className={`${
             isOpen ? 'block' : 'hidden'
@@ -173,8 +169,9 @@ const Navbar = () => {
             ) : (
               <>
                 <li>
+                  {/* 📍 এখানে redirect কুয়েরি যোগ করা হয়েছে যাতে বর্তমান পেজে ফেরত যাওয়া যায় */}
                   <Link
-                    href="/login"
+                    href={`/login?redirect=${encodeURIComponent(pathname)}`}
                     onClick={closeMenu}
                     className="block py-2 px-3 text-white rounded hover:bg-blue-800 md:hover:bg-transparent md:border-0 md:hover:text-blue-200 md:p-0 focus:outline-none focus:ring-0"
                   >
