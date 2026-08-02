@@ -1,58 +1,90 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import Cookies from 'js-cookie';
-import api from '@/lib/axios';
+import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+import api from "@/lib/axios";
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
+    setLoading(true);
 
     try {
-      // API call
-      const res = await api.post('/auth/login', { email, password });
-      const { token, user } = res.data.data || res.data;
+      const res = await api.post("/api/auth/login", { email, password });
 
-      // Save token & role
-      Cookies.set('accessToken', token);
-      Cookies.set('userRole', user.role);
+      console.log("--- FULL BACKEND RESPONSE DATA ---");
+      console.log(JSON.stringify(res.data, null, 2));
 
-      // Redirect based on role
-      if (user.role === 'ADMIN') window.location.href = '/dashboard/admin';
-      else if (user.role === 'PROVIDER') window.location.href = '/dashboard/provider';
-      else window.location.href = '/dashboard/customer';
+      const resData = res.data;
 
+      let token =
+        resData?.data?.accessToken ||
+        resData?.data?.token ||
+        resData?.accessToken ||
+        resData?.token ||
+        resData?.result?.accessToken ||
+        resData?.result?.token;
+
+      const user = resData?.data?.user || resData?.user || resData?.data;
+      const role = user?.role || resData?.role || "CUSTOMER";
+
+      if (!token) {
+        throw new Error(
+          `Token key not found! Keys in response: ${Object.keys(resData || {}).join(", ")}`,
+        );
+      }
+
+      // Save credentials in Cookies
+      Cookies.set("accessToken", token, { expires: 7 });
+      Cookies.set("userRole", role, { expires: 7 });
+      Cookies.set("userName", user?.name || user?.fullName || "User", {
+        expires: 7,
+      });
+
+      alert("Login successful!");
+
+      // 📍 Redirect directly to home page after successful login
+      router.push("/");
+      router.refresh(); // Refresh to ensure Navbar updates cookie state
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+      console.error("Login Error:", err);
+      setError(err.response?.data?.message || err.message || "Login failed!");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <section className="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col justify-center">
       <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto w-full md:h-screen lg:py-0">
-        
         <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
           <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
             <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 text-center md:text-2xl dark:text-white">
-              Log In
+              Login to GearUp
             </h1>
 
             {error && (
-              <div className="p-3 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 border border-red-300 dark:border-red-800" role="alert">
+              <div
+                className="p-3 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 border border-red-300 dark:border-red-800"
+                role="alert"
+              >
                 {error}
               </div>
             )}
 
             <form onSubmit={handleLogin} className="space-y-4 md:space-y-6">
               <div>
-                <label 
-                  htmlFor="email" 
+                <label
+                  htmlFor="email"
                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                 >
                   Your email
@@ -70,8 +102,8 @@ const LoginPage = () => {
               </div>
 
               <div>
-                <label 
-                  htmlFor="password" 
+                <label
+                  htmlFor="password"
                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                 >
                   Password
@@ -87,17 +119,19 @@ const LoginPage = () => {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
+
               <button
                 type="submit"
-                className="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition-colors cursor-pointer"
+                disabled={loading}
+                className="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition-colors cursor-pointer disabled:bg-gray-400 dark:disabled:bg-gray-600"
               >
-                Log in
+                {loading ? "Logging in..." : "Login"}
               </button>
 
               <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                Don’t have an account yet?{' '}
-                <Link 
-                  href="/signup" 
+                Don't have an account yet?{" "}
+                <Link
+                  href="/signup"
                   className="font-medium cursor-pointer text-blue-600 hover:underline dark:text-blue-500"
                 >
                   Sign up

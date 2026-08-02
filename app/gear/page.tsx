@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import api from "@/lib/axios";
-import { getGearImage } from '@/lib/getImage';
+import { getGearImage } from "@/lib/getImage";
 
 interface ICategory {
   id?: string;
@@ -92,7 +92,9 @@ const GearListPage = () => {
                     <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-medium">
                       {categoryName || "General"}
                     </span>
-                    <h3 className="font-bold text-black text-lg mt-2">{item.title}</h3>
+                    <h3 className="font-bold text-black text-lg mt-2">
+                      {item.title}
+                    </h3>
                     <p className="text-sm text-gray-500">{item.brand}</p>
                     <p className="text-blue-600 font-bold mt-2">
                       ৳{item.pricePerDay} / day

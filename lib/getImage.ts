@@ -8,9 +8,8 @@ interface IGear {
 
 const FALLBACK_IMAGES = [
   "https://i.ibb.co.com/gFb2sD0d/Camera.jpg",
-  "https://i.ibb.co.com/JRKtVyFc/Apple.jpg", 
-  "https://i.ibb.co.com/3m80gqCM/Dumbble.jpg",
-  
+  "https://i.ibb.co.com/JRKtVyFc/Apple.jpg",
+  "https://i.ibb.co.com/TMGT6xv1/Dummble.png",
 ];
 
 export const getGearImage = (item: IGear): string => {

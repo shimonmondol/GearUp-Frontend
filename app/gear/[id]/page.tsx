@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
-import api from '@/lib/axios';
-import { getGearImage } from '@/lib/getImage';
+import React, { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+import api from "@/lib/axios";
+import { getGearImage } from "@/lib/getImage";
+
 interface ICategory {
   id?: string;
   name?: string;
@@ -31,10 +32,10 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchGearDetails = async () => {
@@ -51,7 +52,7 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
           setNotFound(true);
         }
       } catch (err: any) {
-        console.error('Failed to fetch gear detail:', err);
+        console.error("Failed to fetch gear detail:", err);
         setNotFound(true);
       } finally {
         setLoading(false);
@@ -74,50 +75,98 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
 
   const handleRentNow = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
-    const token = Cookies.get('accessToken');
+    const token = Cookies.get("accessToken");
+    const userRole = Cookies.get("userRole");
+
+    // 📍 ১. লগইন চেক
     if (!token) {
-      alert('Please login to rent gear');
-      router.push('/login');
+      alert("Please login to rent gear");
+      router.push("/login");
       return;
     }
 
-    if (calculateTotal() <= 0) {
-      setError('End date must be after Start date');
+    // 📍 ২. প্রোভাইডার চেক (Provider গিয়ার রেন্ট করতে পারবে না)
+    if (userRole === "PROVIDER") {
+      alert("Providers cannot rent gear. Please login with a Customer account.");
+      setError("Providers are not allowed to rent gear items.");
       return;
     }
+
+    const total = calculateTotal();
+    if (total <= 0) {
+      setError("End date must be after Start date");
+      return;
+    }
+
+    // দিন সংখ্যা গণনা
+    const startObj = new Date(startDate);
+    const endObj = new Date(endDate);
+    const diffTime = endObj.getTime() - startObj.getTime();
+    const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     setBookingLoading(true);
 
     try {
-      await api.post('/api/rentals', {
+      // 📍 ব্যাকএন্ড ভ্যালিডেশন অনুযায়ী ISO Date Strings ও All Required Keys
+      const payload = {
         gearId: gear?.id,
-        startDate,
-        endDate,
-        totalPrice: calculateTotal(),
-      });
+        startDate: new Date(startDate).toISOString(), // "2026-08-03T00:00:00.000Z"
+        endDate: new Date(endDate).toISOString(),   // "2026-08-05T00:00:00.000Z"
+        totalPrice: Number(total),
+        rentalDays: days,
+      };
 
-      alert('Order placed successfully!');
-      router.push('/dashboard/customer');
+      console.log("Sending Formatted Payload:", payload);
+
+      await api.post("/api/rentals", payload);
+
+      alert("Rental Order placed successfully!");
+      router.push("/dashboard/customer");
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to place rental order.');
+      console.log("--- BACKEND ERROR RESPONSE ---");
+      console.log(err.response?.data);
+
+      const errorData = err.response?.data;
+
+      // ব্যাকএন্ডের Zod / Express ভ্যালিডেশন এরর মেসেজ নিখুঁতভাবে বের করা
+      let message = "Missing required fields for rental order";
+
+      if (typeof errorData?.message === "string") {
+        message = errorData.message;
+      } else if (Array.isArray(errorData?.errorSources)) {
+        // Zod validation sources
+        message = errorData.errorSources
+          .map((s: any) => `${s.path}: ${s.message}`)
+          .join(", ");
+      } else if (Array.isArray(errorData?.errors)) {
+        message = errorData.errors.map((e: any) => e.message || e).join(", ");
+      }
+
+      setError(message);
     } finally {
       setBookingLoading(false);
     }
   };
 
   if (loading) {
-    return <p className="text-center py-20 text-gray-500">Loading gear details...</p>;
+    return (
+      <p className="text-center py-20 text-gray-500">Loading gear details...</p>
+    );
   }
 
   if (notFound || !gear) {
     return (
       <div className="text-center py-20">
-        <h2 className="text-2xl font-bold text-red-500 mb-2">404 - Gear Not Found</h2>
-        <p className="text-gray-600 mb-4">The gear item you are looking for does not exist.</p>
+        <h2 className="text-2xl font-bold text-red-500 mb-2">
+          404 - Gear Not Found
+        </h2>
+        <p className="text-gray-600 mb-4">
+          The gear item you are looking for does not exist.
+        </p>
         <button
-          onClick={() => router.push('/gear')}
+          onClick={() => router.push("/gear")}
           className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"
         >
           Back to Gear List
@@ -126,7 +175,8 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
     );
   }
 
-  const categoryName = typeof gear.category === 'object' ? gear.category?.name : gear.category;
+  const categoryName =
+    typeof gear.category === "object" ? gear.category?.name : gear.category;
 
   return (
     <div className="max-w-4xl mx-auto p-4 mt-26">
@@ -143,22 +193,34 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
         {/* Right Side: Details & Rental Form */}
         <div>
           <span className="text-xs bg-blue-100 text-blue-600 font-semibold px-2 py-1 rounded">
-            {categoryName || 'General'}
+            {categoryName || "General"}
           </span>
 
           <h1 className="text-2xl font-bold text-black mt-2">{gear.title}</h1>
-          {gear.brand && <p className="text-xs text-gray-500">Brand: {gear.brand}</p>}
+          {gear.brand && (
+            <p className="text-xs text-gray-500">Brand: {gear.brand}</p>
+          )}
           <p className="text-gray-600 text-sm mt-3">{gear.description}</p>
 
           <p className="text-2xl font-bold text-blue-600 mt-4">
-            ৳{gear.pricePerDay} <span className="text-sm text-gray-500 font-normal">/ day</span>
+            ৳{gear.pricePerDay}{" "}
+            <span className="text-sm text-gray-500 font-normal">/ day</span>
           </p>
 
-          <form onSubmit={handleRentNow} className="mt-6 border-t pt-4 space-y-4">
-            {error && <p className="text-red-500 text-xs">{error}</p>}
+          <form
+            onSubmit={handleRentNow}
+            className="mt-6 border-t pt-4 space-y-4"
+          >
+            {error && (
+              <div className="p-2.5 bg-red-50 border border-red-200 rounded text-red-600 text-xs">
+                {error}
+              </div>
+            )}
 
             <div>
-              <label className="block text-xs text-gray-800 font-semibold mb-1">Start Date</label>
+              <label className="block text-xs text-gray-800 font-semibold mb-1">
+                Start Date
+              </label>
               <input
                 type="date"
                 required
@@ -169,7 +231,9 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-800 mb-1">End Date</label>
+              <label className="block text-xs font-semibold text-gray-800 mb-1">
+                End Date
+              </label>
               <input
                 type="date"
                 required
@@ -189,9 +253,13 @@ const GearDetailsPage = ({ params }: { params: Promise<{ id: string }> }) => {
             <button
               type="submit"
               disabled={!gear.isAvailable || bookingLoading}
-              className="w-full bg-blue-600 text-white py-2.5 rounded font-semibold hover:bg-blue-700 disabled:bg-gray-400 cursor-pointer"
+              className="w-full bg-blue-600 text-white py-2.5 rounded font-semibold hover:bg-blue-700 disabled:bg-gray-400 cursor-pointer transition"
             >
-              {bookingLoading ? 'Processing...' : gear.isAvailable ? 'Rent Now' : 'Currently Unavailable'}
+              {bookingLoading
+                ? "Processing..."
+                : gear.isAvailable
+                ? "Rent Now"
+                : "Currently Unavailable"}
             </button>
           </form>
         </div>

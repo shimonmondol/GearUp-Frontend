@@ -1,33 +1,33 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import api from '@/lib/axios';
+import React, { useState } from "react";
+import Link from "next/link";
+import api from "@/lib/axios";
 
 const SignUpPage = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     try {
       // API call
-      await api.post('/auth/register', { name, email, password });
+      await api.post("/auth/register", { name, email, password });
 
       // Redirect to login on success
-      window.location.href = '/login';
+      window.location.href = "/login";
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || "Registration failed");
     }
   };
 
@@ -41,15 +41,18 @@ const SignUpPage = () => {
             </h1>
 
             {error && (
-              <div className="p-3 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 border border-red-300 dark:border-red-800" role="alert">
+              <div
+                className="p-3 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 border border-red-300 dark:border-red-800"
+                role="alert"
+              >
                 {error}
               </div>
             )}
 
             <form onSubmit={handleSignup} className="space-y-4 md:space-y-6">
               <div>
-                <label 
-                  htmlFor="name" 
+                <label
+                  htmlFor="name"
                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                 >
                   Full Name
@@ -67,8 +70,8 @@ const SignUpPage = () => {
               </div>
 
               <div>
-                <label 
-                  htmlFor="email" 
+                <label
+                  htmlFor="email"
                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                 >
                   Your email
@@ -86,8 +89,8 @@ const SignUpPage = () => {
               </div>
 
               <div>
-                <label 
-                  htmlFor="password" 
+                <label
+                  htmlFor="password"
                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                 >
                   Password
@@ -112,9 +115,9 @@ const SignUpPage = () => {
               </button>
 
               <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                Already have an account?{' '}
-                <Link 
-                  href="/login" 
+                Already have an account?{" "}
+                <Link
+                  href="/login"
                   className="font-medium cursor-pointer text-blue-600 hover:underline dark:text-blue-500"
                 >
                   Log in
