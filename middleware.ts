@@ -6,6 +6,7 @@ export function middleware(request: NextRequest) {
   const userRole = request.cookies.get('userRole')?.value;
   const currentPath = request.nextUrl.pathname;
 
+  // 1. Dashboard Protected Routes
   if (currentPath.startsWith('/dashboard')) {
     if (!token) {
       const loginUrl = new URL('/login', request.url);
@@ -22,6 +23,8 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard/customer', request.url));
     }
   }
+
+  // 2. Redirect logged-in users away from Auth pages
   if ((currentPath === '/login' || currentPath === '/signup') && token) {
     if (userRole === 'PROVIDER') {
       return NextResponse.redirect(new URL('/dashboard/provider', request.url));

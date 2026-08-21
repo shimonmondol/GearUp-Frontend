@@ -126,10 +126,10 @@ export default function GearPage() {
     <div className="min-h-screen bg-[#fcfdfa] text-zinc-900 font-sans antialiased selection:bg-[#2e5328] selection:text-white">
       
       {/* 1. HERO & VALUE HIGHLIGHTS */}
-      <section className="relative bg-gradient-to-b from-[#eaf2e8] to-[#f9fbf8] pt-10 pb-6 border-b border-zinc-100">
+      <section className="relative bg-linear-to-b from-[#eaf2e8] to-[#f9fbf8] pt-10 pb-6 border-b border-zinc-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
-            className="relative rounded-2xl overflow-hidden min-h-[220px] flex flex-col justify-center px-6 sm:px-10 py-8 text-zinc-900 bg-cover bg-right"
+            className="relative rounded-2xl overflow-hidden min-h-55 flex flex-col justify-center px-6 sm:px-10 py-8 text-zinc-900 bg-cover bg-right"
             style={{
               backgroundImage:
                 "url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80')",

@@ -9,7 +9,6 @@ import { toast } from "react-toastify";
 const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
-
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
@@ -129,7 +128,6 @@ const Navbar = () => {
                   Home
                 </Link>
               </li>
-
               <li>
                 <Link
                   href="/gear"
@@ -138,7 +136,14 @@ const Navbar = () => {
                   Gear
                 </Link>
               </li>
-
+              <li>
+                <Link
+                  href="/contact"
+                  className="block text-white font-normal text-lg hover:text-blue-200 transition-colors focus:outline-none"
+                >
+                  Contact
+                </Link>
+              </li>
               {/* Dynamic Auth Links */}
               {isLoggedIn ? (
                 <>

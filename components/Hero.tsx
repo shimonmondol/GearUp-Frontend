@@ -39,18 +39,13 @@ export const Hero = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-6 space-y-6 z-10">
             <div className="inline-flex items-center gap-1.5">
-              <span className="text-5xl sm:text-6xl font-extrabold tracking-tight text-zinc-950">
-                GEAR
-              </span>
               <span className="text-5xl sm:text-6xl font-extrabold tracking-tight text-[#477a3d]">
-                UP
+                GEARUP
               </span>
             </div>
-
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-zinc-900">
               Your <span className="text-[#3b663b]">Adventure</span> Awaits
             </h1>
-
             <p className="text-zinc-600 text-base sm:text-lg max-w-lg leading-relaxed">
               Rent premium sports and outdoor equipment for any adventure. Save
               money, travel light, and explore more.

@@ -1,5 +1,5 @@
 import React from "react";
-import Image from 'next/image';
+import Image from "next/image";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { FaFacebookF, FaInstagram, FaYoutube, FaTwitter } from "react-icons/fa";
 
@@ -11,10 +11,7 @@ export const Footer = () => {
         <div className="space-y-4 lg:col-span-1">
           <div className="flex items-center gap-1">
             <span className="text-xl font-bold tracking-tight text-white">
-              GEAR
-            </span>
-            <span className="text-xl font-bold tracking-tight text-[#477a3d]">
-              UP
+              GEARUP
             </span>
           </div>
           <p className="text-zinc-400 text-[11px] leading-relaxed">
