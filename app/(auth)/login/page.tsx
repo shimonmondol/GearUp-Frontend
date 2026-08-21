@@ -1,18 +1,28 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import Cookies from "js-cookie";
-import { toast } from "react-toastify";
-import api from "@/lib/axios";
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Cookies from 'js-cookie';
+import { toast } from 'react-toastify';
+import api from '@/lib/axios';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  Loader2,
+} from 'lucide-react';
 
-const LoginPage = () => {
+export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get("redirect") || "/";
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const redirectUrl = searchParams.get('redirect') || '/';
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -20,10 +30,10 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const res = await api.post("/api/auth/login", { email, password });
+      const res = await api.post('/api/auth/login', { email, password });
       const resData = res.data;
 
-      let token =
+      const token =
         resData?.data?.accessToken ||
         resData?.data?.token ||
         resData?.accessToken ||
@@ -32,31 +42,34 @@ const LoginPage = () => {
         resData?.result?.token;
 
       const user = resData?.data?.user || resData?.user || resData?.data;
-      const role = user?.role || resData?.role || "CUSTOMER";
+      const role = user?.role || resData?.role || 'CUSTOMER';
 
       if (!token) {
-        throw new Error("Token missing");
+        throw new Error('Token missing');
       }
 
       // Save credentials in Cookies
-      Cookies.set("accessToken", token, { expires: 7 });
-      Cookies.set("userRole", role, { expires: 7 });
-      Cookies.set("userName", user?.name || user?.fullName || "User", {
+      Cookies.set('accessToken', token, { expires: 7 });
+      Cookies.set('userRole', role, { expires: 7 });
+      Cookies.set('userName', user?.name || user?.fullName || 'User', {
         expires: 7,
       });
 
-      toast.success("Login successful!", {
-        position: "top-center",
-        autoClose: 3000,
+      toast.success('Login successful!', {
+        position: 'top-center',
+        autoClose: 2000,
       });
+
       setTimeout(() => {
         router.push(redirectUrl);
         router.refresh();
-      }, 3000);
+      }, 2000);
     } catch (err: any) {
-      console.error("Login Error Details:", err);
-      toast.error("Login Failed", {
-        position: "top-center",
+      console.error('Login Error Details:', err);
+      const errorMsg =
+        err?.response?.data?.message || err?.message || 'Login Failed';
+      toast.error(errorMsg, {
+        position: 'top-center',
         autoClose: 3000,
       });
     } finally {
@@ -65,76 +78,92 @@ const LoginPage = () => {
   };
 
   return (
-    <section className="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col justify-center">
-      <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto w-full md:h-screen lg:py-0">
-        <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
-          <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
-            <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 text-center md:text-2xl dark:text-white">
-              Login
-            </h1>
-
-            <form onSubmit={handleLogin} className="space-y-4 md:space-y-6">
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Your email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  id="email"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-blue-600 focus:border-blue-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@company.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  id="password"
-                  placeholder="••••••••"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-blue-600 focus:border-blue-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition-colors cursor-pointer disabled:bg-gray-400 dark:disabled:bg-gray-600"
-              >
-                {loading ? "Logging in..." : "Login"}
-              </button>
-
-              <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                Don't have an account yet?{" "}
-                <Link
-                  href="/signup"
-                  className="font-medium cursor-pointer text-blue-600 hover:underline dark:text-blue-500"
-                >
-                  Sign up
-                </Link>
-              </p>
-            </form>
-          </div>
+    <div className="min-h-screen bg-[#fcfdfa] text-zinc-900 font-sans antialiased flex items-center justify-center p-4 selection:bg-[#285724] selection:text-white">
+      
+      {/* Centered Card */}
+      <div className="bg-white border border-zinc-200/80 rounded-3xl p-8 sm:p-12 w-full max-w-md shadow-xl my-auto">
+        
+        <div className="text-center space-y-1 mb-8">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900">
+            Login to <span className="text-[#285724]">Gear</span><span className="text-[#3b7c35]">Up</span>
+          </h2>
+          <p className="text-xs text-zinc-500">Welcome back! Please enter your details.</p>
         </div>
-      </div>
-    </section>
-  );
-};
 
-export default LoginPage;
+        <form onSubmit={handleLogin} className="space-y-4">
+          
+          {/* Email Input */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-800">Email Address</label>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-zinc-900 placeholder-zinc-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#285724] focus:border-[#285724] transition"
+              />
+            </div>
+          </div>
+
+          {/* Password Input */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-zinc-800">Password</label>
+              <Link href="/forgot-password" className="text-[11px] font-semibold text-[#285724] hover:underline">
+                Forgot Password?
+              </Link>
+            </div>
+            <div className="relative">
+              <Lock className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl pl-10 pr-10 py-2.5 text-xs text-zinc-900 placeholder-zinc-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#285724] focus:border-[#285724] transition"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 bg-[#285724] hover:bg-[#1f441c] disabled:bg-zinc-400 text-white py-3 rounded-xl text-xs font-semibold shadow-md hover:shadow-lg transition mt-2 cursor-pointer disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Logging in...</span>
+              </>
+            ) : (
+              <>
+                <span>Login</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Login Redirect */}
+        <p className="text-center text-xs text-zinc-600 mt-6">
+          Don't have an account?{' '}
+          <Link href="/signup" className="text-[#285724] font-semibold hover:underline">
+            Register here
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
