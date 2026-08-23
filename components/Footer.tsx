@@ -122,7 +122,7 @@ export const Footer = () => {
           <div className="space-y-2 text-zinc-400">
             <div className="flex items-center gap-2">
               <Phone className="w-3.5 h-3.5 text-[#8ec584]" />
-              <span>+880 1234 567890</span>
+              <span>+8801738-007334</span>
             </div>
             <div className="flex items-center gap-2">
               <Mail className="w-3.5 h-3.5 text-[#8ec584]" />
@@ -132,7 +132,7 @@ export const Footer = () => {
               <MapPin className="w-3.5 h-3.5 text-[#8ec584] shrink-0 mt-0.5" />
               <span>
                 House 12, Road 5<br />
-                Dhanmondi, Dhaka 1205
+                Banasree, Dhaka 1205
               </span>
             </div>
           </div>

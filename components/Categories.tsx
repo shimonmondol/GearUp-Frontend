@@ -6,31 +6,31 @@ const categories = [
     title: "Camping",
     desc: "Tents, Sleeping Bags & More",
     icon: Tent,
-    img: "/images/camping.jpg"
+    img: "/images/campingtent.jpg"
   },
   {
-    title: "Hiking",
+    title: "Fitness",
     desc: "Backpacks, Poles & More",
     icon: Footprints,
-    img: "/images/hiking.jpg"
+    img: "/images/gym.jpg"
   },
   {
     title: "Cycling",
     desc: "Bikes, Helmets & More",
     icon: Bike,
-    img: "/images/cycling.jpg"
+    img: "/images/bike.jpg"
   },
   {
     title: "Water Sports",
     desc: "Kayaks, Life Jackets & More",
     icon: Waves,
-    img: "/images/watersports.jpg"
+    img: "/images/kayakset.jpg"
   },
   {
     title: "Winter Sports",
     desc: "Skis, Snowboards & More",
     icon: Snowflake,
-    img: "/images/wintersports.jpg"
+    img: "/images/skiset.jpg"
   }
 ];
 

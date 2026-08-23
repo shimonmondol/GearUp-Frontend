@@ -92,7 +92,7 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-[#fcfdfa] text-zinc-900 font-sans antialiased selection:bg-[#285724] selection:text-white">
       {/* 2. HERO BANNER */}
-      <section className="relative bg-linear-to-b from-[#eaf2e8] to-[#f9fbf8] pt-10 pb-8 border-b border-zinc-100">
+      <section className="relative bg-linear-to-b from-[#eaf2e8] to-[#f9fbf8] pt-20 border-b border-zinc-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             className="relative rounded-3xl overflow-hidden min-h-60 flex flex-col justify-center px-6 sm:px-12 py-8 text-zinc-900 bg-cover bg-right shadow-sm"
