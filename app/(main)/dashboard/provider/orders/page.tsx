@@ -1,210 +1,164 @@
-"use client";
+// app/dashboard/provider/orders/page.tsx
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
-import api from "@/lib/axios";
+import React, { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
-interface IOrder {
+type OrderStatus = 'Pending' | 'Confirmed' | 'Picked Up' | 'Returned';
+
+interface Order {
   id: string;
+  gearName: string;
+  customerName: string;
   startDate: string;
   endDate: string;
-  totalPrice?: number;
-  totalCost?: number;
-  status:
-    | "PENDING"
-    | "APPROVED"
-    | "PICKED_UP"
-    | "RETURNED"
-    | "REJECTED"
-    | "CANCELLED";
-  customer?: { name?: string; email?: string };
-  gear?: { title?: string };
-  orderItems?: any[];
+  totalPrice: number;
+  status: OrderStatus;
 }
 
-export default function OrderManagementPage() {
-  const [orders, setOrders] = useState<IOrder[]>([]);
+export default function ProviderOrdersPage() {
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchIncomingOrders();
-  }, []);
-
-  const fetchIncomingOrders = async () => {
+  const fetchOrders = async () => {
     try {
-      setLoading(true);
-      let res;
-      try {
-        res = await api.get("/api/rentals/provider-orders");
-      } catch (err) {
-        res = await api.get("/api/rentals");
+      const res = await fetch('/api/provider/orders');
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data);
       }
-
-      const rawData = res.data?.data || res.data;
-      setOrders(Array.isArray(rawData) ? rawData : []);
     } catch (err) {
-      console.error("Failed to load incoming orders:", err);
+      console.error('Failed to load orders', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdateOrderStatus = async (
-    orderId: string,
-    newStatus: string,
-  ) => {
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const handleUpdateStatus = async (orderId: string, nextStatus: OrderStatus) => {
+    setUpdatingId(orderId);
     try {
-      await api.patch(`/api/rentals/${orderId}/status`, { status: newStatus });
-
-      toast.success(`Order status updated to ${newStatus}!`, {
-        position: "top-center",
+      const res = await fetch(`/api/provider/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
       });
 
-      setOrders((prev) =>
-        prev.map((order) =>
-          order.id === orderId ? { ...order, status: newStatus as any } : order,
-        ),
-      );
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update status", {
-        position: "top-center",
-      });
+      if (res.ok) {
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o))
+        );
+      } else {
+        alert('Failed to update order status');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating status');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6 mt-16">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">
-          Incoming Rental Orders
-        </h1>
-        <p className="text-xs text-gray-500 mt-1">
-          Manage customer bookings and update rental state
-        </p>
+        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Order Lifecycle Management</h2>
+        <p className="text-xs text-slate-500">Confirm bookings and track active handoffs and returns.</p>
       </div>
 
-      {loading ? (
-        <p className="text-center py-12 text-gray-500">
-          Loading incoming orders...
-        </p>
-      ) : orders.length === 0 ? (
-        <div className="bg-white border rounded-xl p-10 text-center text-gray-500">
-          No incoming rental orders found.
-        </div>
-      ) : (
-        <div className="bg-white border rounded-xl shadow-sm overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 border-b text-xs uppercase text-gray-500">
-              <tr>
-                <th className="p-4">Customer</th>
-                <th className="p-4">Item</th>
-                <th className="p-4">Dates</th>
-                <th className="p-4">Total Fee</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {orders.map((order) => {
-                const total = order.totalPrice || order.totalCost || 0;
-                const gearTitle =
-                  order.gear?.title ||
-                  order.orderItems?.[0]?.gear?.title ||
-                  "Equipment Item";
-
-                return (
-                  <tr key={order.id} className="hover:bg-gray-50 transition">
-                    <td className="p-4">
-                      <p className="font-semibold text-gray-800">
-                        {order.customer?.name || "Customer"}
-                      </p>
-                      <p className="text-[11px] text-gray-400">
-                        {order.customer?.email}
-                      </p>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="p-10 flex justify-center items-center text-slate-400 text-xs">
+            <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading orders...
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="p-10 text-center text-xs text-slate-400">No incoming orders found.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase font-semibold">
+                  <th className="py-3 px-4">Order ID</th>
+                  <th className="py-3 px-4">Gear & Customer</th>
+                  <th className="py-3 px-4">Dates</th>
+                  <th className="py-3 px-4">Total</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {orders.map((order) => (
+                  <tr key={order.id} className="hover:bg-slate-50/50 transition">
+                    <td className="py-3.5 px-4 font-mono font-medium text-slate-500">{order.id}</td>
+                    <td className="py-3.5 px-4">
+                      <p className="font-semibold text-slate-900 text-sm">{order.gearName}</p>
+                      <p className="text-[11px] text-slate-400">{order.customerName}</p>
                     </td>
-
-                    <td className="p-4 font-semibold text-gray-700">
-                      {gearTitle}
+                    <td className="py-3.5 px-4 text-slate-500">
+                      {order.startDate} <span className="text-slate-300">to</span> {order.endDate}
                     </td>
-
-                    <td className="p-4 text-xs text-gray-600">
-                      {new Date(order.startDate).toLocaleDateString()} ➔{" "}
-                      {new Date(order.endDate).toLocaleDateString()}
-                    </td>
-
-                    <td className="p-4 font-bold text-purple-600">৳{total}</td>
-
-                    <td className="p-4">
+                    <td className="py-3.5 px-4 font-bold text-slate-900">${order.totalPrice}</td>
+                    <td className="py-3.5 px-4">
                       <span
-                        className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                          order.status === "APPROVED"
-                            ? "bg-green-100 text-green-700"
-                            : order.status === "PICKED_UP"
-                              ? "bg-blue-100 text-blue-700"
-                              : order.status === "RETURNED"
-                                ? "bg-gray-100 text-gray-700"
-                                : order.status === "PENDING"
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-red-100 text-red-700"
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${
+                          order.status === 'Pending'
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            : order.status === 'Confirmed'
+                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                            : order.status === 'Picked Up'
+                            ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                         }`}
                       >
                         {order.status}
                       </span>
                     </td>
-
-                    <td className="p-4 text-right">
-                      <div className="flex justify-end gap-1.5">
-                        {order.status === "PENDING" && (
-                          <>
+                    <td className="py-3.5 px-4 text-right">
+                      {updatingId === order.id ? (
+                        <span className="text-[11px] text-slate-400">Updating...</span>
+                      ) : (
+                        <div className="inline-flex gap-1.5">
+                          {order.status === 'Pending' && (
                             <button
-                              onClick={() =>
-                                handleUpdateOrderStatus(order.id, "APPROVED")
-                              }
-                              className="bg-green-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-green-700 cursor-pointer"
+                              onClick={() => handleUpdateStatus(order.id, 'Confirmed')}
+                              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded transition"
                             >
                               Confirm
                             </button>
+                          )}
+                          {order.status === 'Confirmed' && (
                             <button
-                              onClick={() =>
-                                handleUpdateOrderStatus(order.id, "REJECTED")
-                              }
-                              className="bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded text-xs font-semibold hover:bg-red-100 cursor-pointer"
+                              onClick={() => handleUpdateStatus(order.id, 'Picked Up')}
+                              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded transition"
                             >
-                              Reject
+                              Mark Picked Up
                             </button>
-                          </>
-                        )}
-
-                        {order.status === "APPROVED" && (
-                          <button
-                            onClick={() =>
-                              handleUpdateOrderStatus(order.id, "PICKED_UP")
-                            }
-                            className="bg-blue-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-blue-700 cursor-pointer"
-                          >
-                            Mark Picked Up
-                          </button>
-                        )}
-
-                        {order.status === "PICKED_UP" && (
-                          <button
-                            onClick={() =>
-                              handleUpdateOrderStatus(order.id, "RETURNED")
-                            }
-                            className="bg-purple-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-purple-700 cursor-pointer"
-                          >
-                            Mark Returned
-                          </button>
-                        )}
-                      </div>
+                          )}
+                          {order.status === 'Picked Up' && (
+                            <button
+                              onClick={() => handleUpdateStatus(order.id, 'Returned')}
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded transition"
+                            >
+                              Mark Returned
+                            </button>
+                          )}
+                          {order.status === 'Returned' && (
+                            <span className="text-slate-400 italic">Completed</span>
+                          )}
+                        </div>
+                      )}
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

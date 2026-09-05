@@ -1,386 +1,402 @@
+// app/dashboard/provider/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { toast } from "react-toastify";
 import api from "@/lib/axios";
-import { getGearImage } from "@/lib/getImage";
+import { toast } from "react-toastify";
+import {
+  Package,
+  CheckCircle,
+  Clock,
+  Plus,
+  Loader2,
+  RefreshCw,
+  ShoppingBag,
+  User,
+  Calendar,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 
-interface IGear {
-  id: string;
+interface Gear {
+  id?: string;
   _id?: string;
-  title: string;
-  brand?: string;
-  pricePerDay: number;
-  stockQuantity: number;
-  isAvailable: boolean;
+  title?: string;
+  name?: string;
+  category?: any;
+  pricePerDay?: number;
+  price?: number;
+  imageUrl?: string;
+  image?: string;
   images?: string[];
-  description?: string;
+  isAvailable?: boolean;
 }
 
-export default function ProviderDashboardPage() {
-  const [gearList, setGearList] = useState<IGear[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
+interface RentalOrder {
+  id?: string;
+  _id?: string;
+  gearId?: string | any;
+  gear?: any;
+  gearName?: string;
+  customer?: any;
+  user?: any;
+  customerName?: string;
+  customerEmail?: string;
+  startDate: string;
+  endDate: string;
+  totalPrice: number;
+  rentalDays?: number;
+  status:
+    | "Pending"
+    | "Confirmed"
+    | "Picked Up"
+    | "Returned"
+    | "CANCELLED"
+    | string;
+  createdAt?: string;
+}
+
+export default function ProviderOverviewPage() {
+  const [gearList, setGearList] = useState<Gear[]>([]);
+  const [orders, setOrders] = useState<RentalOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
-  // Edit Modal State
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedGear, setSelectedGear] = useState<IGear | null>(null);
-  const [updating, setUpdating] = useState(false);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  // ১. ব্যাকএন্ড থেকে গিয়ার ও রেন্টাল অর্ডার ফেচ করা
+  const fetchProviderData = useCallback(async () => {
     try {
-      setLoading(true);
-      // ১. প্রোভাইডারের গিয়ার লিস্ট লোড
-      let gearRes;
-      try {
-        gearRes = await api.get("/api/gear/my-listings");
-      } catch (err) {
-        gearRes = await api.get("/api/gear");
-      }
-      const rawGear = gearRes.data?.data || gearRes.data;
-      setGearList(Array.isArray(rawGear) ? rawGear : []);
+      // আপনার ব্যাকএন্ডের গিয়ার এবং রেন্টাল রুটগুলো কল করা হচ্ছে
+      const [gearsRes, rentalsRes] = await Promise.allSettled([
+        api.get("/api/gear"),
+        api.get("/api/rentals"),
+      ]);
 
-      // ২. ইনকামিং অর্ডারসমূহ লোড
-      let orderRes;
-      try {
-        orderRes = await api.get("/api/rentals/provider-orders");
-      } catch (err) {
-        orderRes = await api.get("/api/rentals");
+      if (gearsRes.status === "fulfilled") {
+        const data = gearsRes.value.data?.data || gearsRes.value.data || [];
+        setGearList(Array.isArray(data) ? data : []);
       }
-      const rawOrders = orderRes.data?.data || orderRes.data;
-      setOrders(Array.isArray(rawOrders) ? rawOrders : []);
+
+      if (rentalsRes.status === "fulfilled") {
+        const data = rentalsRes.value.data?.data || rentalsRes.value.data || [];
+        setOrders(Array.isArray(data) ? data : []);
+      }
     } catch (err) {
-      console.error("Failed to fetch dashboard overview:", err);
+      console.error("Failed to load provider data", err);
+      toast.error("Failed to fetch dashboard data");
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchProviderData();
+  }, [fetchProviderData]);
+
+  const handleManualRefresh = () => {
+    setIsRefreshing(true);
+    fetchProviderData();
   };
 
-  // Availability Toggle Logic
-  const handleToggleAvailability = async (gear: IGear) => {
-    const targetId = gear.id || gear._id;
+  // ২. অর্ডার স্ট্যাটাস আপডেট হ্যান্ডলার (PATCH/PUT)
+  const handleUpdateStatus = async (orderId: string, nextStatus: string) => {
+    setUpdatingOrderId(orderId);
     try {
-      const updatedStatus = !gear.isAvailable;
-      await api.patch(`/api/gear/${targetId}`, { isAvailable: updatedStatus });
-
-      setGearList((prev) =>
-        prev.map((item) =>
-          (item.id || item._id) === targetId
-            ? { ...item, isAvailable: updatedStatus }
-            : item,
-        ),
-      );
-      toast.success("Availability updated!", { position: "top-center" });
-    } catch (err) {
-      toast.error("Failed to update availability status", {
-        position: "top-center",
-      });
-    }
-  };
-
-  // Delete Gear
-  const handleDeleteGear = async (gearId: string) => {
-    if (!confirm("Are you sure you want to remove this item from inventory?"))
-      return;
-
-    try {
-      await api.delete(`/api/gear/${gearId}`);
-      toast.success("Gear item removed successfully!", {
-        position: "top-center",
-      });
-      setGearList((prev) =>
-        prev.filter((item) => (item.id || item._id) !== gearId),
-      );
+      await api.patch(`/api/rentals/${orderId}`, { status: nextStatus });
+      toast.success(`Order status updated to ${nextStatus}`);
+      fetchProviderData(); // রিলোড
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to remove item", {
-        position: "top-center",
-      });
-    }
-  };
-
-  // Edit Modal Submission
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedGear) return;
-    const targetId = selectedGear.id || selectedGear._id;
-
-    setUpdating(true);
-    try {
-      await api.patch(`/api/gear/${targetId}`, {
-        title: selectedGear.title,
-        brand: selectedGear.brand,
-        pricePerDay: Number(selectedGear.pricePerDay),
-        stockQuantity: Number(selectedGear.stockQuantity),
-        description: selectedGear.description,
-      });
-
-      toast.success("Gear details updated successfully!", {
-        position: "top-center",
-      });
-      setEditModalOpen(false);
-      fetchDashboardData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update gear", {
-        position: "top-center",
-      });
+      // যদি PATCH ফেইল করে PUT দিয়ে ট্রাই করবে
+      try {
+        await api.put(`/api/rentals/${orderId}`, { status: nextStatus });
+        toast.success(`Order status updated to ${nextStatus}`);
+        fetchProviderData();
+      } catch (putErr) {
+        toast.error("Failed to update status");
+      }
     } finally {
-      setUpdating(false);
+      setUpdatingOrderId(null);
     }
   };
 
-  // Stats Calculations
-  const totalGearListed = gearList.length;
-  const activeRentals = orders.filter(
-    (o) => o.status === "APPROVED" || o.status === "PICKED_UP",
+  // মেট্রিক ক্যালকুলেশন
+  const totalGearCount = gearList.length;
+  const availableGearCount = gearList.filter(
+    (g) => g.isAvailable !== false,
   ).length;
-  const pendingOrders = orders.filter((o) => o.status === "PENDING").length;
+  const totalBookingsCount = orders.length;
+  const pendingOrdersCount = orders.filter(
+    (o) => o.status?.toUpperCase() === "PENDING",
+  ).length;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      {/* Overview Cards Section */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
-        <p className="text-xs text-gray-500 mt-0.5">
-          Quick analytics on inventory and active orders
-        </p>
+    <div className="space-y-8 mt-12 pb-12">
+      {/* টপ হেডার */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-zinc-950 tracking-tight">
+            Provider Dashboard
+          </h2>
+          <p className="text-xs text-zinc-500 mt-0.5">
+            Real-time incoming customer rental requests and gear inventory.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="p-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-600 rounded-xl shadow-xs transition disabled:opacity-50"
+            title="Refresh Orders"
+          >
+            <RefreshCw
+              className={`w-4 h-4 ${
+                isRefreshing ? "animate-spin text-[#2e5328]" : ""
+              }`}
+            />
+          </button>
+          <Link
+            href="/dashboard/provider/gear/new"
+            className="inline-flex items-center gap-2 bg-[#2e5328] hover:bg-[#244220] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition"
+          >
+            <Plus className="w-4 h-4" /> Add Gear
+          </Link>
+        </div>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-4">
-          <div className="bg-white border rounded-xl p-5 shadow-sm">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-xs font-semibold text-gray-400">
-                  Total Gear Listed
-                </p>
-                <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                  {totalGearListed}
-                </h3>
-              </div>
-              <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center text-lg">
-                📦
-              </div>
-            </div>
+      {/* মেট্রিক কার্ডস */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-[#eff5ed] text-[#2e5328] rounded-xl">
+            <Package className="w-5 h-5" />
           </div>
-
-          <div className="bg-white border rounded-xl p-5 shadow-sm">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-xs font-semibold text-gray-400">
-                  Active Rentals
-                </p>
-                <h3 className="text-2xl font-bold text-green-600 mt-1">
-                  {activeRentals}
-                </h3>
-              </div>
-              <div className="w-10 h-10 bg-green-50 text-green-600 rounded-lg flex items-center justify-center text-lg">
-                🔄
-              </div>
-            </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+              Total Gear
+            </p>
+            <p className="text-2xl font-black text-zinc-950">
+              {totalGearCount}
+            </p>
           </div>
+        </div>
 
-          <div className="bg-white border rounded-xl p-5 shadow-sm">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-xs font-semibold text-gray-400">
-                  Pending Orders
-                </p>
-                <h3 className="text-2xl font-bold text-amber-600 mt-1">
-                  {pendingOrders}
-                </h3>
-              </div>
-              <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center text-lg">
-                ⏳
-              </div>
-            </div>
+        <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+            <CheckCircle className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+              Ready to Rent
+            </p>
+            <p className="text-2xl font-black text-zinc-950">
+              {availableGearCount}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+            <ShoppingBag className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+              Total Bookings
+            </p>
+            <p className="text-2xl font-black text-zinc-950">
+              {totalBookingsCount}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+            <Clock className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+              Pending Action
+            </p>
+            <p className="text-2xl font-black text-zinc-950">
+              {pendingOrdersCount}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Inventory Management Section */}
-      <div>
-        <div className="flex justify-between items-center mb-4">
+      {/* কাস্টমারদের অর্ডার টেবিল (Recent Customer Orders) */}
+      <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs overflow-hidden">
+        <div className="p-5 border-b border-zinc-100 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-800">
-              Inventory Management
-            </h2>
-            <p className="text-xs text-gray-500">
-              Edit, remove, or change gear availability
+            <h3 className="text-sm font-black text-zinc-950 flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-[#2e5328]" />
+              Incoming Customer Rentals (অর্ডারসমূহ)
+            </h3>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              কাস্টমার যখন &quot;Rent Now&quot; বাটনে ক্লিক করে বুকিং করেছে,
+              তাদের তালিকা নিচে দেখুন।
             </p>
           </div>
-          <Link
-            href="/dashboard/provider/add-gear"
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-purple-700 transition"
-          >
-            + Add New Gear
-          </Link>
+          <span className="text-xs font-bold px-3 py-1 bg-[#eff5ed] text-[#2e5328] rounded-full">
+            {orders.length} Total Orders
+          </span>
         </div>
 
         {loading ? (
-          <p className="text-center py-12 text-gray-500">
-            Loading inventory...
-          </p>
-        ) : gearList.length === 0 ? (
-          <div className="bg-white border rounded-xl p-8 text-center text-gray-500">
-            No equipment listed yet.
+          <div className="p-12 flex justify-center items-center text-zinc-400 text-xs">
+            <Loader2 className="w-6 h-6 animate-spin text-[#2e5328] mr-2" />
+            Loading customer bookings...
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="p-12 text-center text-xs text-zinc-400">
+            এখনও কোনো কাস্টমার বুকিং করেনি। কাস্টমার একাউন্ট দিয়ে রেন্ট করার
+            সাথে সাথে এখানে নাম ও আইটেম চলে আসবে।
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {gearList.map((item) => {
-              const targetId = item.id || item._id || "";
-              return (
-                <div
-                  key={targetId}
-                  className="bg-white border rounded-xl overflow-hidden shadow-sm flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="relative h-44 bg-gray-100">
-                      <img
-                        src={getGearImage(item)}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        onClick={() => handleToggleAvailability(item)}
-                        className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase cursor-pointer transition ${
-                          item.isAvailable
-                            ? "bg-green-500 text-white hover:bg-green-600"
-                            : "bg-red-500 text-white hover:bg-red-600"
-                        }`}
-                      >
-                        {item.isAvailable ? "Available" : "Unavailable"}
-                      </button>
-                    </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-[#fafbfa] border-b border-zinc-100 text-zinc-500 uppercase font-bold text-[10px] tracking-wider">
+                  <th className="py-3.5 px-5">Order ID</th>
+                  <th className="py-3.5 px-5">Rented Gear</th>
+                  <th className="py-3.5 px-5">Customer Info</th>
+                  <th className="py-3.5 px-5">Rental Duration</th>
+                  <th className="py-3.5 px-5">Total Paid</th>
+                  <th className="py-3.5 px-5">Status</th>
+                  <th className="py-3.5 px-5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 text-zinc-700 font-medium">
+                {orders.map((order) => {
+                  const orderId = order.id || order._id || "N/A";
+                  const gearTitle =
+                    order.gearName ||
+                    order.gear?.title ||
+                    order.gear?.name ||
+                    "Gear Item";
+                  const customerName =
+                    order.customerName ||
+                    order.customer?.name ||
+                    order.user?.name ||
+                    "Verified Customer";
+                  const customerEmail =
+                    order.customerEmail ||
+                    order.customer?.email ||
+                    order.user?.email ||
+                    "";
+                  const formattedStart = order.startDate
+                    ? new Date(order.startDate).toLocaleDateString()
+                    : "N/A";
+                  const formattedEnd = order.endDate
+                    ? new Date(order.endDate).toLocaleDateString()
+                    : "N/A";
 
-                    <div className="p-4">
-                      <h3 className="font-bold text-gray-800 text-base line-clamp-1">
-                        {item.title}
-                      </h3>
-                      {item.brand && (
-                        <p className="text-xs text-gray-400">
-                          Brand: {item.brand}
-                        </p>
-                      )}
+                  const currentStatus = order.status || "Pending";
 
-                      <div className="mt-3 flex justify-between items-center border-t pt-2">
-                        <p className="text-sm font-bold text-purple-600">
-                          ৳{item.pricePerDay}/day
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          Stock: {item.stockQuantity} pcs
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-gray-50 border-t flex justify-between items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedGear(item);
-                        setEditModalOpen(true);
-                      }}
-                      className="text-xs border border-gray-300 px-3 py-1.5 rounded text-gray-700 font-semibold hover:bg-gray-100 transition cursor-pointer"
+                  return (
+                    <tr
+                      key={orderId}
+                      className="hover:bg-zinc-50/60 transition"
                     >
-                      ✏️ Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteGear(targetId)}
-                      className="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded font-semibold hover:bg-red-100 transition cursor-pointer"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                      <td className="py-4 px-5 font-mono text-zinc-400 font-semibold">
+                        #{orderId.slice(-6).toUpperCase()}
+                      </td>
+                      <td className="py-4 px-5">
+                        <p className="font-bold text-zinc-950 text-sm">
+                          {gearTitle}
+                        </p>
+                      </td>
+                      <td className="py-4 px-5">
+                        <div className="flex items-center gap-1.5 font-bold text-zinc-900">
+                          <User className="w-3.5 h-3.5 text-zinc-400" />
+                          {customerName}
+                        </div>
+                        {customerEmail && (
+                          <div className="text-[11px] text-zinc-400 pl-5">
+                            {customerEmail}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-4 px-5 text-zinc-600">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                          <span>
+                            {formattedStart} &rarr; {formattedEnd}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5 font-black text-zinc-950 text-sm">
+                        ৳ {order.totalPrice}
+                      </td>
+                      <td className="py-4 px-5">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold ${
+                            currentStatus.toUpperCase() === "PENDING"
+                              ? "bg-amber-50 text-amber-700 border border-amber-200"
+                              : currentStatus.toUpperCase() === "CONFIRMED"
+                                ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                : currentStatus.toUpperCase() === "PICKED UP"
+                                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          }`}
+                        >
+                          {currentStatus}
+                        </span>
+                      </td>
+                      <td className="py-4 px-5 text-right">
+                        {updatingOrderId === orderId ? (
+                          <span className="text-[11px] text-zinc-400">
+                            Updating...
+                          </span>
+                        ) : (
+                          <div className="inline-flex gap-1.5 justify-end">
+                            {currentStatus.toUpperCase() === "PENDING" && (
+                              <button
+                                onClick={() =>
+                                  handleUpdateStatus(orderId, "Confirmed")
+                                }
+                                className="px-3 py-1.5 bg-[#2e5328] hover:bg-[#244220] text-white font-bold rounded-lg text-[11px] transition"
+                              >
+                                Confirm
+                              </button>
+                            )}
+                            {currentStatus.toUpperCase() === "CONFIRMED" && (
+                              <button
+                                onClick={() =>
+                                  handleUpdateStatus(orderId, "Picked Up")
+                                }
+                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-[11px] transition"
+                              >
+                                Mark Picked Up
+                              </button>
+                            )}
+                            {currentStatus.toUpperCase() === "PICKED UP" && (
+                              <button
+                                onClick={() =>
+                                  handleUpdateStatus(orderId, "Returned")
+                                }
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] transition"
+                              >
+                                Mark Returned
+                              </button>
+                            )}
+                            {currentStatus.toUpperCase() === "RETURNED" && (
+                              <span className="text-zinc-400 text-xs font-semibold flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                Completed
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
-
-      {/* Edit Gear Modal */}
-      {editModalOpen && selectedGear && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">
-              Edit Gear Listing
-            </h2>
-
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="w-full border p-2 rounded-lg text-sm"
-                  value={selectedGear.title}
-                  onChange={(e) =>
-                    setSelectedGear({ ...selectedGear, title: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Price/Day (৳)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    className="w-full border p-2 rounded-lg text-sm"
-                    value={selectedGear.pricePerDay}
-                    onChange={(e) =>
-                      setSelectedGear({
-                        ...selectedGear,
-                        pricePerDay: Number(e.target.value),
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Stock
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    className="w-full border p-2 rounded-lg text-sm"
-                    value={selectedGear.stockQuantity}
-                    onChange={(e) =>
-                      setSelectedGear({
-                        ...selectedGear,
-                        stockQuantity: Number(e.target.value),
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setEditModalOpen(false)}
-                  className="border px-4 py-2 rounded-lg text-xs font-semibold hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={updating}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-purple-700 disabled:bg-gray-400"
-                >
-                  {updating ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -3,34 +3,34 @@ import { ArrowRight, Tent, Footprints, Bike, Waves, Snowflake } from 'lucide-rea
 
 const categories = [
   {
-    title: "Camping",
+    title: "4 Person Camping Tent",
     desc: "Tents, Sleeping Bags & More",
     icon: Tent,
-    img: "/images/campingtent.jpg"
+    img: "https://i.ibb.co.com/LwbNQ4m/campingtent.avif"
   },
   {
-    title: "Fitness",
+    title: "Trekking Backpack 60L",
     desc: "Backpacks, Poles & More",
     icon: Footprints,
-    img: "/images/gym.jpg"
+    img: "https://i.ibb.co.com/DPzCbCc8/photo-1553062407-98eeb64c6a62.avif"
   },
   {
-    title: "Cycling",
+    title: "Mountain Bike",
     desc: "Bikes, Helmets & More",
     icon: Bike,
-    img: "/images/bike.jpg"
+    img: "https://i.ibb.co.com/HDHNmD7f/bike.avif"
   },
   {
-    title: "Water Sports",
+    title: "Kayak Set",
     desc: "Kayaks, Life Jackets & More",
     icon: Waves,
-    img: "/images/kayakset.jpg"
+    img: "https://i.ibb.co.com/ybzmLDR/kayakset.avif"
   },
   {
-    title: "Winter Sports",
+    title: "Hiking Boots",
     desc: "Skis, Snowboards & More",
     icon: Snowflake,
-    img: "/images/skiset.jpg"
+    img: "https://i.ibb.co.com/nsZvm0XR/boots.avif"
   }
 ];
 
