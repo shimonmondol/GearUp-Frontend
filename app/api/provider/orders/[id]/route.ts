@@ -1,13 +1,13 @@
-import { NextResponse } from 'next/server';
-import { ordersDatabase } from '../route';
-import { gearInventory } from '../../gear/route';
+import { NextRequest, NextResponse } from "next/server";
+import { ordersDatabase } from "../route";
+import { gearInventory } from "../../gear/route";
 
 export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { status } = body;
 
@@ -16,16 +16,18 @@ export async function PATCH(
     if (orderIndex === -1) {
       return NextResponse.json(
         { success: false, message: `Order with ID ${id} not found` },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     const currentOrder = ordersDatabase[orderIndex];
     currentOrder.status = status;
 
-    // গিয়ার রিটার্ন করা হলে ইনভেন্টরিতে স্টক ফিরিয়ে দেওয়া
-    if (status === 'Returned') {
-      const gearIndex = gearInventory.findIndex((g) => g.id === currentOrder.gearId);
+    // গিয়ার রিটার্ন করা হলে ইনভেন্টরিতে স্টক ফিরিয়ে দেওয়া
+    if (status === "Returned") {
+      const gearIndex = gearInventory.findIndex(
+        (g) => g.id === currentOrder.gearId,
+      );
       if (gearIndex !== -1) {
         gearInventory[gearIndex].isAvailable = true;
       }
@@ -37,12 +39,12 @@ export async function PATCH(
         data: currentOrder,
         message: `Order status updated to '${status}'`,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: 'Internal Server Error' },
-      { status: 500 }
+      { success: false, message: "Internal Server Error" },
+      { status: 500 },
     );
   }
 }
