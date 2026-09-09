@@ -3,58 +3,61 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('accessToken')?.value;
-  // toUpperCase() ব্যবহার করায় 'provider' বা 'PROVIDER' উভয় ক্ষেত্রেই কাজ করবে
-  const userRole = request.cookies.get('userRole')?.value?.toUpperCase();
-  const currentPath = request.nextUrl.pathname;
+  const rawRole = request.cookies.get('userRole')?.value;
+  // কেস সেনসিটিভ সমস্যা এড়াতে uppercase করা হলো
+  const userRole = rawRole ? rawRole.toUpperCase() : null;
+  const pathname = request.nextUrl.pathname;
 
-  // ১. Auth পেজে লগইন করা ইউজার ঢুকলে রোল অনুযায়ী ড্যাশবোর্ডে রিডাইরেক্ট
-  if ((currentPath === '/login' || currentPath === '/signup') && token) {
-    if (userRole === 'PROVIDER') {
-      return NextResponse.redirect(new URL('/dashboard/provider', request.url));
-    } else if (userRole === 'ADMIN') {
-      return NextResponse.redirect(new URL('/dashboard/admin', request.url));
-    } else {
-      return NextResponse.redirect(new URL('/dashboard/customer', request.url));
-    }
-  }
-
-  // ২. ড্যাশবোর্ড রুট প্রোটেকশন
-  if (currentPath.startsWith('/dashboard')) {
-    // টোকেন না থাকলে লগইনে পাঠাবে
+  // ১. ড্যাশবোর্ড রুট প্রোটেকশন
+  if (pathname.startsWith('/dashboard')) {
+    // যদি টোকেন না থাকে, সরাসরি লগইন পেজে পাঠাবে
     if (!token) {
       const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', currentPath);
+      loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
     }
 
-    // ইউজার যদি সরাসরি '/dashboard' এ হিট করে
-    if (currentPath === '/dashboard') {
-      if (userRole === 'PROVIDER') {
-        return NextResponse.redirect(new URL('/dashboard/provider', request.url));
-      } else if (userRole === 'ADMIN') {
-        return NextResponse.redirect(new URL('/dashboard/admin', request.url));
-      } else {
-        return NextResponse.redirect(new URL('/dashboard/customer', request.url));
-      }
+    // যদি কোনো কারণে রোল কুকি না থাকে, ইনফিনিট লুপ এড়াতে লগইনে পাঠাবে
+    if (!userRole) {
+      const loginUrl = new URL('/login', request.url);
+      return NextResponse.redirect(loginUrl);
     }
 
-    // রোল অনুযায়ী অ্যাক্সেস গার্ড
-    if (currentPath.startsWith('/dashboard/provider') && userRole !== 'PROVIDER') {
-      return NextResponse.redirect(new URL('/dashboard/customer', request.url));
-    }
+    // Role Enforcement (শুধুমাত্র ভিন্ন রোলে থাকলে তবেই রিডাইরেক্ট করবে)
+    const roleHome = getRoleHome(userRole);
 
-    if (currentPath.startsWith('/dashboard/admin') && userRole !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/dashboard/customer', request.url));
+    if (pathname.startsWith('/dashboard/customer') && userRole !== 'CUSTOMER') {
+      return NextResponse.redirect(new URL(roleHome, request.url));
     }
+    if (pathname.startsWith('/dashboard/provider') && userRole !== 'PROVIDER') {
+      return NextResponse.redirect(new URL(roleHome, request.url));
+    }
+    if (pathname.startsWith('/dashboard/admin') && userRole !== 'ADMIN') {
+      return NextResponse.redirect(new URL(roleHome, request.url));
+    }
+  }
 
-    if (currentPath.startsWith('/dashboard/customer') && userRole === 'PROVIDER') {
-      return NextResponse.redirect(new URL('/dashboard/provider', request.url));
-    }
+  // ২. লগইন/সাইনআপে থাকলে এবং অলরেডি লগইন করা থাকলে ড্যাশবোর্ডে পাঠাবে
+  if ((pathname === '/login' || pathname === '/register' || pathname === '/signup') && token) {
+    return NextResponse.redirect(new URL(getRoleHome(userRole || 'CUSTOMER'), request.url));
   }
 
   return NextResponse.next();
 }
 
+function getRoleHome(role?: string | null) {
+  switch (role) {
+    case 'ADMIN':
+      return '/dashboard/admin';
+    case 'PROVIDER':
+      return '/dashboard/provider';
+    case 'CUSTOMER':
+      return '/dashboard/customer';
+    default:
+      return '/login'; // অজানা বা খালি রোল হলে ইনফিনিট লুপ না করে লগইনে পাঠাবে
+  }
+}
+
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/signup'],
+  matcher: ['/dashboard/:path*', '/login', '/register', '/signup'],
 };

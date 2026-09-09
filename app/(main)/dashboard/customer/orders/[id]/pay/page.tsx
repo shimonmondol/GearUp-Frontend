@@ -1,72 +1,184 @@
 'use client';
 
-import { use, useState } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect, use } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+import api from '@/lib/axios';
 
-interface PageProps {
+export default function OrderPaymentPage({
+  params,
+}: {
   params: Promise<{ id: string }>;
-}
+}) {
+  const resolvedParams = use(params);
+  const router = useRouter();
+  const orderId = resolvedParams.id;
 
-export default function OrderPayPage({ params }: PageProps) {
-  const { id } = use(params);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [order, setOrder] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
+  const [gateway, setGateway] = useState<'SSLCOMMERZ' | 'STRIPE'>('SSLCOMMERZ');
 
-  const handlePayment = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/payments/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: id }),
-      });
-      const data = await res.json();
-
-      if (data.gatewayUrl) {
-        window.location.href = data.gatewayUrl;
-      } else {
-        alert(data.error || 'Failed to initialize payment gateway.');
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get(`/api/rentals/${orderId}`);
+        const data = res.data?.data || res.data;
+        setOrder(data);
+      } catch (err: any) {
+        console.error('Invoice load error:', err?.response?.data || err);
+        toast.error('Failed to load order invoice details');
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error(err);
-      alert('Network request failed.');
+    };
+
+    if (orderId) {
+      fetchOrder();
+    }
+  }, [orderId]);
+
+  const handleCheckout = async () => {
+    setPaying(true);
+
+    // ব্যাকএন্ডের ভিন্ন ভ্যালিডেশনের সাথে মিল রাখার জন্য সম্ভাব্য সব ফিল্ড পাঠানো
+    const payload = {
+      rentalOrderId: orderId,
+      rentalId: orderId,
+      orderId: orderId,
+      paymentGateway: gateway,
+      gateway: gateway.toLowerCase(),
+    };
+
+    try {
+      const res = await api.post('/api/payments/create', payload);
+
+      console.log('Payment Gateway API Response:', res.data);
+
+      const resData = res.data?.data || res.data;
+
+      // বিভিন্ন পেমেন্ট গেটওয়ের রিটার্ন করা URL ফিল্ড ক্যাচ করা
+      const redirectUrl =
+        resData?.paymentUrl ||
+        resData?.GatewayPageURL || // SSLCommerz sandbox/live URL
+        resData?.url ||            // Stripe checkout session URL
+        resData?.redirectUrl ||
+        resData?.checkoutUrl;
+
+      if (redirectUrl) {
+        // বাহ্যিক পেমেন্ট গেটওয়ে পেজে রিডাইরেক্ট
+        window.location.href = redirectUrl;
+      } else {
+        console.error('No redirect URL property found in response:', res.data);
+        toast.error('Payment gateway URL was not provided by the server.');
+      }
+    } catch (err: any) {
+      console.error('Payment API Error Details:', err?.response?.data || err);
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        'Payment initiation failed. Please try again.';
+      toast.error(msg);
     } finally {
-      setLoading(false);
+      setPaying(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center text-gray-500">
+        Loading invoice details...
+      </div>
+    );
+  }
+
+  const gearTitle =
+    order?.gear?.title ||
+    order?.gear?.name ||
+    order?.orderItems?.[0]?.gear?.title ||
+    'Sports Gear';
+
+  const totalAmount =
+    order?.totalPrice ||
+    order?.totalCost ||
+    order?.amount ||
+    0;
+
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-white border border-gray-200 rounded-2xl shadow-sm text-center">
-      <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 font-semibold">
-        💳
-      </div>
-      <h1 className="text-xl font-bold text-gray-900">Confirm Payment</h1>
-      <p className="text-xs font-mono text-gray-500 mt-1">Order #{id}</p>
-
-      <div className="my-6 p-4 bg-gray-50 rounded-xl text-left text-sm space-y-2 border border-gray-100">
-        <div className="flex justify-between text-gray-600">
-          <span>Rental Deposit & Fee:</span>
-          <span>Included</span>
-        </div>
-        <div className="flex justify-between border-t border-gray-200 pt-2 font-bold text-gray-900">
-          <span>Total Payable:</span>
-          <span className="text-blue-600">Calculated at Checkout</span>
-        </div>
+    <div className="max-w-xl mx-auto p-6 mt-12 bg-white border border-gray-200 rounded-2xl shadow-sm">
+      <div className="border-b pb-4 mb-6">
+        <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded uppercase">
+          Secure Payment
+        </span>
+        <h1 className="text-2xl font-bold text-gray-800 mt-2">Checkout & Pay</h1>
+        <p className="text-xs text-gray-500 mt-0.5">
+          Complete payment to confirm and lock your gear reservation
+        </p>
       </div>
 
+      {/* Invoice Details */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-2 mb-6 text-sm">
+        <div className="flex justify-between">
+          <span className="text-gray-500">Item:</span>
+          <span className="font-semibold text-gray-800">{gearTitle}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">Order ID:</span>
+          <span className="font-mono text-gray-700">#{orderId?.slice(0, 10)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">Rental Period:</span>
+          <span className="text-gray-700">
+            {order?.startDate ? new Date(order.startDate).toLocaleDateString() : 'N/A'} -{' '}
+            {order?.endDate ? new Date(order.endDate).toLocaleDateString() : 'N/A'}
+          </span>
+        </div>
+        <div className="flex justify-between text-base font-bold pt-2 border-t text-gray-900">
+          <span>Total Due:</span>
+          <span className="text-blue-600">৳{totalAmount}</span>
+        </div>
+      </div>
+
+      {/* Gateway Selection */}
+      <div className="space-y-3 mb-6 items-center">
+        <label className="block text-xs font-semibold text-gray-700">
+          Choose Payment Gateway
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setGateway('SSLCOMMERZ')}
+            className={`p-4 border rounded-xl text-center font-bold text-sm transition cursor-pointer ${
+              gateway === 'SSLCOMMERZ'
+                ? 'border-blue-600 bg-blue-50 text-blue-700 ring-2 ring-blue-600/20'
+                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            SSLCommerz
+            <span className="block text-[11px] font-normal text-gray-500 mt-0.5">
+              Cards / bKash / Nagad
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Submit Action */}
       <button
-        onClick={handlePayment}
-        disabled={loading}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl disabled:opacity-50 transition shadow-sm"
+        onClick={handleCheckout}
+        disabled={paying}
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition disabled:bg-gray-400 cursor-pointer text-sm"
       >
-        {loading ? 'Redirecting to Gateway...' : 'Proceed to Checkout'}
+        {paying ? 'Redirecting to Gateway...' : `Pay ৳${totalAmount} via ${gateway}`}
       </button>
 
-      <Link
-        href="/dashboard/customer"
-        className="inline-block mt-3 text-xs text-gray-500 hover:text-gray-800 transition"
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="w-full text-center text-xs text-gray-500 hover:text-gray-800 mt-3"
       >
-        Cancel and return
-      </Link>
+        ← Cancel and Return to Dashboard
+      </button>
     </div>
   );
 }

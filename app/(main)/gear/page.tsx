@@ -6,10 +6,6 @@ import Link from "next/link";
 import {
   Home,
   ChevronRight,
-  ShieldCheck,
-  Wallet,
-  RefreshCw,
-  Headphones,
   Star,
   Heart,
   ShoppingBag,
@@ -55,7 +51,6 @@ const getProductImage = (item: Product): string => {
   return "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=600&q=80";
 };
 
-// ID থেকে ফিক্সড সংখ্যা জেনারেট করার ফাংশন (যাতে রিলোডে পরিবর্তন না হয়)
 const getStableHash = (id: string | number): number => {
   const str = String(id || "");
   let hash = 0;
@@ -71,7 +66,7 @@ export default function GearPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<string>("popular");
+  const [sortBy, setSortBy] = useState<string>("default");
 
   useEffect(() => {
     const fetchGearData = async () => {
@@ -83,18 +78,16 @@ export default function GearPage() {
         }
         const data = await res.json();
         const productList: any[] = Array.isArray(data) ? data : data.data || data.gears || [];
-
-        const formattedProducts = productList.map((item) => {
+        const formattedProducts = productList.map((item, index) => {
           const itemId = item.id || item._id || item.title || "";
           const hash = getStableHash(itemId);
 
           return {
             ...item,
             id: itemId,
+            originalIndex: index,
             pricePerDay: Number(item.pricePerDay ?? item.price) || 0,
-            // ID-র ওপর ভিত্তি করে স্থির ৪ বা ৫ স্টার (রিলোডে বদলাবে না)
             rating: item.rating && item.rating >= 4 ? item.rating : (hash % 2 === 0 ? 5 : 4),
-            // ID-র ওপর ভিত্তি করে স্থির রিভিউ সংখ্যা (২০ থেকে ৯৯ এর মধ্যে)
             reviews: item.reviews || 20 + (hash % 80),
           };
         });
@@ -110,7 +103,6 @@ export default function GearPage() {
     fetchGearData();
   }, []);
 
-  // ক্যাটাগরি তালিকা তৈরি
   const categoryNames = useMemo(() => {
     return Array.from(
       new Set(products.map((item) => getCategoryName(item.category)).filter(Boolean))
@@ -124,7 +116,6 @@ export default function GearPage() {
     }));
   }, [categoryNames, products]);
 
-  // ফিল্টারিং এবং সর্টিং হ্যান্ডলিং
   const filteredProducts = useMemo(() => {
     return products
       .filter((p) => (selectedCategory ? getCategoryName(p.category) === selectedCategory : true))
@@ -141,7 +132,7 @@ export default function GearPage() {
         if (sortBy === "popular") {
           return ((b.reviews || 0) * (b.rating || 1)) - ((a.reviews || 0) * (a.rating || 1));
         }
-        return 0;
+        return (a.originalIndex ?? 0) - (b.originalIndex ?? 0);
       });
   }, [products, selectedCategory, sortBy]);
 
@@ -152,7 +143,7 @@ export default function GearPage() {
   return (
     <div className="min-h-screen bg-[#fcfdfa] text-zinc-900 font-sans antialiased selection:bg-[#2e5328] selection:text-white">
       {/* 1. HERO SECTION */}
-      <section className="relative bg-gradient-to-b from-[#eaf2e8] to-[#f9fbf8] pt-10 pb-6 border-b border-zinc-100">
+      <section className="relative bg-linear-to-b from-[#eaf2e8] to-[#f9fbf8] pt-10 pb-6 border-b border-zinc-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             className="relative rounded-2xl overflow-hidden min-h-55 flex flex-col justify-center px-6 sm:px-10 py-8 text-zinc-900 bg-cover bg-right mt-9"
@@ -195,7 +186,7 @@ export default function GearPage() {
               <h3 className="font-bold text-zinc-900 text-sm">Filters</h3>
               <button
                 onClick={() => setSelectedCategory(null)}
-                className="text-xs text-[#2e5328] hover:underline font-semibold"
+                className="text-xs text-[#2e5328] hover:underline font-semibold cursor-pointer"
               >
                 Clear All
               </button>
@@ -246,7 +237,6 @@ export default function GearPage() {
                 of {products.length} results
               </p>
 
-              {/* সর্ট ড্রপডাউন */}
               <div className="flex items-center gap-2 self-end sm:self-auto">
                 <label htmlFor="sortSelect" className="text-xs font-medium text-zinc-500">
                   Sort by:
@@ -257,6 +247,7 @@ export default function GearPage() {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="border border-zinc-200 rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#2e5328] cursor-pointer shadow-2xs"
                 >
+                  <option value="default">Default</option>
                   <option value="popular">Popularity</option>
                   <option value="low-to-high">Price: Low to High</option>
                   <option value="high-to-low">Price: High to Low</option>
@@ -266,7 +257,7 @@ export default function GearPage() {
 
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
-                <Loader2 className="w-8 h-8 animate-spin text-[#2e5328] mb-2" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#2e5328]" />
                 <p className="text-sm">Loading gears...</p>
               </div>
             ) : error ? (
@@ -361,7 +352,7 @@ export default function GearPage() {
                           className="w-full flex items-center justify-center gap-1.5 bg-[#2e5328] hover:bg-[#244220] text-white py-2 rounded-lg text-xs font-semibold transition"
                         >
                           <ShoppingBag className="w-3.5 h-3.5" />
-                          <span>Rent Now</span>
+                          <span>View Details</span>
                         </Link>
                       </div>
                     </div>

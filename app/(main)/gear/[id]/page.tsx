@@ -34,7 +34,7 @@ const defaultHighlights = [
 
 const gearCache = new Map<string, any>();
 
-// আল্ট্রা-ফাস্ট শিমার প্লেসহোল্ডার (SVG Base64)
+// শিমার প্লেসহোল্ডার (SVG Base64)
 const shimmer = (w: number, h: number) => `
 <svg width="${w}" height="${h}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
@@ -88,7 +88,9 @@ export default function GearDetailsPage({
   const [loading, setLoading] = useState<boolean>(() => !gearCache.has(currentId));
   const [notFound, setNotFound] = useState<boolean>(false);
   const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
-  const [imgSrc, setImgSrc] = useState<string>(() => (gearCache.get(currentId) ? extractProductImage(gearCache.get(currentId)) : ""));
+  const [imgSrc, setImgSrc] = useState<string>(() =>
+    gearCache.get(currentId) ? extractProductImage(gearCache.get(currentId)) : ""
+  );
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [bookingLoading, setBookingLoading] = useState<boolean>(false);
@@ -109,13 +111,13 @@ export default function GearDetailsPage({
       try {
         setLoading(true);
         const res = await fetch(`https://gear-up-beta.vercel.app/api/gear/${currentId}`, {
-          cache: "force-cache",
+          cache: "no-store",
         });
 
         if (!res.ok) throw new Error("Failed to fetch");
 
         const json = await res.json();
-        const data = json?.data || json;
+        const data = json?.data || json?.gear || json;
 
         if (data && (data.id || data._id || data.title)) {
           const finalImage = extractProductImage(data);
@@ -125,11 +127,6 @@ export default function GearDetailsPage({
             pricePerDay: Number(data.pricePerDay ?? data.price) || 0,
             mainImage: finalImage,
           };
-
-          if (typeof window !== "undefined" && finalImage) {
-            const preImg = new window.Image();
-            preImg.src = finalImage;
-          }
 
           gearCache.set(currentId, formattedItem);
 
@@ -175,6 +172,7 @@ export default function GearDetailsPage({
     const token = Cookies.get("accessToken");
     const userRole = Cookies.get("userRole");
 
+    // ১. টোকেন না থাকলে লগইনে রিডাইরেক্ট
     if (!token) {
       toast.warning("Please login to rent gear", {
         position: "top-center",
@@ -182,11 +180,12 @@ export default function GearDetailsPage({
       });
       setTimeout(() => {
         router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
-      }, 1200);
+      }, 1000);
       return;
     }
 
-    if (userRole === "PROVIDER") {
+    // ২. স্কিমার Role enums অনুযায়ী ছোট হাতের কন্ডিশন চেক
+    if (userRole && userRole.toLowerCase() === "provider") {
       const msg = "Providers cannot rent gear. Please login with a Customer account.";
       toast.error(msg, {
         position: "top-center",
@@ -218,25 +217,43 @@ export default function GearDetailsPage({
     setBookingLoading(true);
 
     try {
+      // ৩. Prisma Schema অনুযায়ী তৈরি ক্লিন পেলোড
       const payload = {
         gearId: String(targetGearId),
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
-        totalPrice: Number(total),
+        totalPrice: parseFloat(Number(total).toFixed(2)),
         rentalDays: days,
-        gearItems: [{ gearId: String(targetGearId), quantity: 1 }],
+        orderItems: [
+          {
+            gearId: String(targetGearId),
+            quantity: 1,
+          },
+        ],
+        gearItems: [
+          {
+            gearId: String(targetGearId),
+            quantity: 1,
+          },
+        ],
       };
 
-      const res = await api.post("/api/rentals", payload);
-      const responseData = res.data?.data || res.data;
-      const orderId = responseData?.id || responseData?._id || responseData?.orderId || targetGearId;
+      // ৪. সরাসরি Bearer Token পাস করা হচ্ছে
+      await api.post("/api/rentals", payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      toast.success("Rental booked! Redirecting to payment...", {
+      toast.success("Rental booked successfully!", {
         position: "top-center",
         autoClose: 1000,
       });
+
+      // ৫. সরাসরি কাস্টমার ড্যাশবোর্ডে রিডাইরেক্ট ও রিফ্রেশ
       setTimeout(() => {
-        router.push(`/dashboard/customer/orders/${orderId}/pay`);
+        router.push("/dashboard/customer");
+        router.refresh();
       }, 700);
     } catch (err: any) {
       const errorData = err.response?.data;
@@ -289,17 +306,16 @@ export default function GearDetailsPage({
   const categoryName = typeof gear.category === "object" ? gear.category?.name : gear.category || "Gear";
 
   const specifications = [
-    { label: "Brand", value: gear.brand || "Quechua Authentic" },
+    { label: "Brand", value: gear.brand || "Authentic" },
     { label: "Category", value: categoryName },
     { label: "Availability", value: gear.isAvailable !== false ? "In Stock" : "Out of Stock" },
-    { label: "Stock Quantity", value: `${gear.stockQuantity ?? 5} Units available` },
+    { label: "Stock Quantity", value: `${gear.stockQuantity ?? 1} Units available` },
     { label: "Rental Policy", value: "Verified ID & Standard Deposit" },
     { label: "Condition", value: "Inspected & Safety Checked" },
   ];
 
   return (
     <div className="min-h-screen bg-[#fcfdfa] text-zinc-900 font-sans antialiased selection:bg-[#2e5328] selection:text-white mt-18">
-      {/* স্ক্রিনের একদম টপ-সেন্টারে টোস্ট কনটেইনার */}
       <ToastContainer
         position="top-center"
         autoClose={2500}
@@ -332,7 +348,6 @@ export default function GearDetailsPage({
       {/* 2. PRODUCT MAIN DETAILS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          
           {/* Main Optimized Image */}
           <div className="lg:col-span-6">
             <div className="relative aspect-4/3 w-full rounded-3xl overflow-hidden bg-zinc-100 border border-zinc-200/80 group shadow-xs">
