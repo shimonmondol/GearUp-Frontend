@@ -25,11 +25,11 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (password.length < 8) {
-      toast.error('Password must be at least 8 Characters', {
+      toast.error('Password must be at least 8 characters', {
         position: 'top-center',
         autoClose: 3000,
       });
@@ -48,25 +48,26 @@ export default function RegisterPage() {
 
     try {
       await api.post('/api/auth/register', {
-        name,
-        email,
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
         password,
         role: 'customer',
       });
 
-      toast.success('SignUp Successful', {
+      toast.success('Registration successful! Redirecting to login...', {
         position: 'top-center',
-        autoClose: 3000,
+        autoClose: 2000,
       });
 
       setTimeout(() => {
         router.push('/login');
-      }, 3000);
+      }, 2000);
     } catch (err: any) {
-      console.error('Signup Error Details:', err.response?.data);
+      console.error('Signup Error Details:', err.response?.data || err);
 
       const serverData = err.response?.data;
-      let errorMsg = 'SignUp Failed';
+      let errorMsg = 'Signup failed. Please try again.';
+
       if (serverData?.errorDetails && Array.isArray(serverData.errorDetails)) {
         errorMsg = serverData.errorDetails
           .map((item: any) => item.message)
@@ -76,6 +77,7 @@ export default function RegisterPage() {
           ? serverData.message.join(', ')
           : serverData.message;
       }
+
       toast.error(errorMsg, {
         position: 'top-center',
         autoClose: 3000,
@@ -87,10 +89,8 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-[#fcfdfa] text-zinc-900 font-sans antialiased flex items-center justify-center p-4 selection:bg-[#285724] selection:text-white">
-      
       {/* Centered Register Card */}
       <div className="bg-white border border-zinc-200/80 rounded-3xl p-8 sm:p-12 w-full max-w-md shadow-xl my-auto">
-        
         <div className="text-center space-y-1 mb-8">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900">
             Create an <span className="text-[#285724]">Account</span>
@@ -99,7 +99,6 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleSignup} className="space-y-4">
-          
           {/* Full Name Input */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-zinc-800">Full Name</label>
@@ -124,6 +123,7 @@ export default function RegisterPage() {
               <input
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
@@ -140,15 +140,17 @@ export default function RegisterPage() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a password"
+                placeholder="At least 8 characters"
                 className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl pl-10 pr-10 py-2.5 text-xs text-zinc-900 placeholder-zinc-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#285724] focus:border-[#285724] transition"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -163,6 +165,7 @@ export default function RegisterPage() {
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 required
+                autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your password"
@@ -172,6 +175,7 @@ export default function RegisterPage() {
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none cursor-pointer"
+                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
               >
                 {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
