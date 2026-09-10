@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import Cookies from "js-cookie";
 import {
   Package,
   CheckCircle,
@@ -13,6 +14,7 @@ import {
   Trash2,
   ExternalLink,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "@/lib/axios";
@@ -36,52 +38,123 @@ export default function ProviderDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const [gearRes, ordersRes] = await Promise.all([
-        api.get("/api/provider/gear"),
-        api.get("/api/provider/orders"),
+      const token = Cookies.get("accessToken");
+
+      if (!token) {
+        toast.warning("Please login as a Provider");
+        setLoading(false);
+        return;
+      }
+
+      // জটিল ক্যাশ হেডার বাদ দিন যা CORS ড্রপ করায়
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      // সরাসরি প্রাইমারি এন্ডপয়েন্টগুলোতে রিকোয়েস্ট পাঠান
+      const [gearRes, ordersRes] = await Promise.allSettled([
+        api.get(`/api/gear/my-gear?_t=${Date.now()}`, config),
+        api.get(`/api/orders/provider?_t=${Date.now()}`, config),
       ]);
 
-      const gearData = gearRes.data?.data || [];
-      const ordersData = ordersRes.data?.data || [];
+      let gearData: GearItem[] = [];
+      let ordersData: any[] = [];
 
-      setGears(gearData);
+      // 1. Gear Data Parsing
+      if (gearRes.status === "fulfilled") {
+        const rawGear = gearRes.value.data?.data || gearRes.value.data || [];
+        gearData = Array.isArray(rawGear) ? rawGear : [];
+        setGears(gearData);
+      } else {
+        // আসল রুট এররটি কনসোলে পুরোপুরি এক্সপোজ করুন
+        console.error("❌ Provider Gear Fetch Error:", gearRes.reason);
+        console.log("Error Details:", {
+          message: gearRes.reason?.message,
+          code: gearRes.reason?.code,
+          status: gearRes.reason?.response?.status,
+          data: gearRes.reason?.response?.data,
+        });
+      }
+
+      // 2. Orders Data Parsing
+      if (ordersRes.status === "fulfilled") {
+        const rawOrders =
+          ordersRes.value.data?.data || ordersRes.value.data || [];
+        ordersData = Array.isArray(rawOrders) ? rawOrders : [];
+      } else {
+        console.error("❌ Provider Orders Fetch Error:", ordersRes.reason);
+        console.log("Error Details:", {
+          message: ordersRes.reason?.message,
+          code: ordersRes.reason?.code,
+          status: ordersRes.reason?.response?.status,
+          data: ordersRes.reason?.response?.data,
+        });
+      }
+
+      if (gearRes.status === "rejected" && ordersRes.status === "rejected") {
+        const errorMsg =
+          (gearRes.reason as any)?.response?.data?.message ||
+          (gearRes.reason as any)?.message ||
+          "Failed to load dashboard information.";
+        toast.error(errorMsg);
+        return;
+      }
+
+      const activeRentalsCount = ordersData.filter(
+        (o: any) => (o.status || "").toUpperCase() === "PICKED_UP",
+      ).length;
+
+      const pendingOrdersCount = ordersData.filter(
+        (o: any) =>
+          (o.status || "").toUpperCase() === "PLACED" ||
+          (o.status || "").toUpperCase() === "PENDING",
+      ).length;
+
       setStats({
         totalGear: gearData.length,
-        activeRentals: ordersData.filter((o: any) => o.status === "PICKED_UP")
-          .length,
-        pendingOrders: ordersData.filter((o: any) => o.status === "PLACED")
-          .length,
+        activeRentals: activeRentalsCount,
+        pendingOrders: pendingOrdersCount,
       });
     } catch (err) {
-      console.error("Failed to load dashboard metrics", err);
+      console.error("Dashboard general runtime error:", err);
       toast.error("Failed to load dashboard information");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [fetchDashboardData]);
 
-  const handleToggleAvailability = async (gearId: string, currentStatus: boolean) => {
+  const handleToggleAvailability = async (
+    gearId: string,
+    currentStatus: boolean,
+  ) => {
     setTogglingId(gearId);
     try {
-      await api.patch(`/api/provider/gear/${gearId}`, {
-        isAvailable: !currentStatus,
-      });
+      const token = Cookies.get("accessToken");
+      await api.patch(
+        `/api/provider/gear/${gearId}`,
+        { isAvailable: !currentStatus },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
 
       setGears((prev) =>
         prev.map((g) =>
-          g.id === gearId ? { ...g, isAvailable: !currentStatus } : g
-        )
+          g.id === gearId ? { ...g, isAvailable: !currentStatus } : g,
+        ),
       );
       toast.success("Stock status updated");
-    } catch (err) {
-      toast.error("Failed to update availability");
+    } catch (err: any) {
+      toast.error(
+        err.response?.data?.message || "Failed to update availability",
+      );
     } finally {
       setTogglingId(null);
     }
@@ -91,12 +164,19 @@ export default function ProviderDashboardPage() {
     if (!confirm("Are you sure you want to remove this gear listing?")) return;
 
     try {
-      await api.delete(`/api/provider/gear/${gearId}`);
+      const token = Cookies.get("accessToken");
+      await api.delete(`/api/provider/gear/${gearId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       setGears((prev) => prev.filter((g) => g.id !== gearId));
-      setStats((prev) => ({ ...prev, totalGear: prev.totalGear - 1 }));
+      setStats((prev) => ({
+        ...prev,
+        totalGear: Math.max(0, prev.totalGear - 1),
+      }));
       toast.success("Gear listing deleted");
-    } catch (err) {
-      toast.error("Failed to delete gear");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete gear");
     }
   };
 
@@ -105,12 +185,21 @@ export default function ProviderDashboardPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Provider Dashboard</h1>
+          <h1 className="text-2xl font-bold text-zinc-900">
+            Provider Dashboard
+          </h1>
           <p className="text-sm text-zinc-500">
             Monitor your rental listings and store operations.
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={fetchDashboardData}
+            className="p-2.5 border border-zinc-200 bg-white hover:bg-zinc-50 rounded-xl text-zinc-600 transition cursor-pointer shadow-sm"
+            title="Refresh Data"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
           <Link
             href="/dashboard/provider/orders"
             className="inline-flex items-center gap-1.5 border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition"
@@ -134,8 +223,12 @@ export default function ProviderDashboardPage() {
             <Package className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-zinc-500 font-medium">Total Gear Listed</p>
-            <h3 className="text-2xl font-bold text-zinc-900">{stats.totalGear}</h3>
+            <p className="text-xs text-zinc-500 font-medium">
+              Total Gear Listed
+            </p>
+            <h3 className="text-2xl font-bold text-zinc-900">
+              {stats.totalGear}
+            </h3>
           </div>
         </div>
 
@@ -148,10 +241,14 @@ export default function ProviderDashboardPage() {
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
-              <p className="text-xs text-zinc-500 font-medium">Pending Orders</p>
+              <p className="text-xs text-zinc-500 font-medium">
+                Pending Orders
+              </p>
               <ExternalLink className="w-3.5 h-3.5 text-zinc-400 group-hover:text-amber-600 transition" />
             </div>
-            <h3 className="text-2xl font-bold text-zinc-900">{stats.pendingOrders}</h3>
+            <h3 className="text-2xl font-bold text-zinc-900">
+              {stats.pendingOrders}
+            </h3>
           </div>
         </Link>
 
@@ -161,7 +258,9 @@ export default function ProviderDashboardPage() {
           </div>
           <div>
             <p className="text-xs text-zinc-500 font-medium">Active Rentals</p>
-            <h3 className="text-2xl font-bold text-zinc-900">{stats.activeRentals}</h3>
+            <h3 className="text-2xl font-bold text-zinc-900">
+              {stats.activeRentals}
+            </h3>
           </div>
         </div>
       </div>
@@ -184,9 +283,16 @@ export default function ProviderDashboardPage() {
           </div>
         ) : gears.length === 0 ? (
           <div className="text-center py-10">
-            <p className="text-xs text-zinc-500">
-              No inventory found. Click &quot;Add Gear&quot; to publish listings.
+            <p className="text-xs text-zinc-500 mb-2">
+              No inventory found. Click &quot;Add Gear&quot; to publish
+              listings.
             </p>
+            <Link
+              href="/dashboard/provider/addgear"
+              className="text-xs text-[#285724] font-bold underline"
+            >
+              Add your first gear listing
+            </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -223,21 +329,29 @@ export default function ProviderDashboardPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="py-3 px-2 text-zinc-600">{gear.category || "General"}</td>
-                    <td className="py-3 px-2 font-medium">৳{gear.pricePerDay}</td>
+                    <td className="py-3 px-2 text-zinc-600">
+                      {gear.category || "General"}
+                    </td>
+                    <td className="py-3 px-2 font-medium">
+                      ৳{gear.pricePerDay}
+                    </td>
                     <td className="py-3 px-2">
                       <button
                         disabled={togglingId === gear.id}
-                        onClick={() => handleToggleAvailability(gear.id, gear.isAvailable)}
+                        onClick={() =>
+                          handleToggleAvailability(gear.id, gear.isAvailable)
+                        }
                         className="inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
                         {gear.isAvailable ? (
                           <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[10px] font-semibold">
-                            <ToggleRight className="w-4 h-4 text-emerald-600" /> In Stock
+                            <ToggleRight className="w-4 h-4 text-emerald-600" />{" "}
+                            In Stock
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded-full border border-zinc-200 text-[10px] font-semibold">
-                            <ToggleLeft className="w-4 h-4 text-zinc-400" /> Out of Stock
+                            <ToggleLeft className="w-4 h-4 text-zinc-400" /> Out
+                            of Stock
                           </span>
                         )}
                       </button>
@@ -245,7 +359,7 @@ export default function ProviderDashboardPage() {
                     <td className="py-3 px-2 text-right">
                       <button
                         onClick={() => handleDeleteGear(gear.id)}
-                        className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                        className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                         title="Delete listing"
                       >
                         <Trash2 className="w-4 h-4" />

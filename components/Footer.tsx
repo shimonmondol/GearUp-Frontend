@@ -144,44 +144,40 @@ export const Footer = () => {
             We Accept
           </h4>
           {/* Payment Methods */}
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             {/* VISA */}
             <h1 className="mr-4">Payment</h1>
-            <div className="relative w-16 h-16 flex items-center justify-center">
-              <Image
-                src="/images/visa.png"
-                alt="Visa Payment"
-                fill
-                className="object-contain"
-              />
-            </div>
+            <Image
+              src="/images/visa.png"
+              alt="Visa Payment"
+              width={32}
+              height={32}
+              className="object-contain"
+            />
             {/* bKash */}
-            <div className="relative w-12 h-12 flex items-center justify-center">
-              <Image
-                src="/images/bkash.png"
-                alt="bKash Payment"
-                fill
-                className="object-contain"
-              />
-            </div>
+            <Image
+              src="/images/bkash.png"
+              alt="bKash logo"
+              width={120}
+              height={60}
+              className="w-10 h-auto"
+            />
             {/* Nagad */}
-            <div className="relative w-12 h-7 flex items-center justify-center">
-              <Image
-                src="/images/nagad.png"
-                alt="Nagad Payment"
-                fill
-                className="object-contain"
-              />
-            </div>
+            <Image
+              src="/images/nagad.png"
+              alt="Nagad Payment"
+              width={32}
+              height={32}
+              className="object-contain"
+            />
             {/* Rocket */}
-            <div className="relative w-12 h-6 flex items-center justify-center">
-              <Image
-                src="/images/rocket.png"
-                alt="Rocket Payment"
-                fill
-                className="object-contain"
-              />
-            </div>
+            <Image
+              src="/images/rocket.png"
+              alt="Rocket icon"
+              width={32}
+              height={32}
+              className="object-contain"
+            />
           </div>
         </div>
       </div>

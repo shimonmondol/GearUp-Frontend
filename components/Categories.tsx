@@ -6,31 +6,31 @@ const categories = [
     title: "4 Person Camping Tent",
     desc: "Tents, Sleeping Bags & More",
     icon: Tent,
-    img: "https://i.ibb.co.com/LwbNQ4m/campingtent.avif"
+    img: "https://i.ibb.co.com/PsGVLnyx/campingtent.jpg"
   },
   {
     title: "Trekking Backpack 60L",
     desc: "Backpacks, Poles & More",
     icon: Footprints,
-    img: "https://i.ibb.co.com/DPzCbCc8/photo-1553062407-98eeb64c6a62.avif"
+    img: "https://i.ibb.co.com/N6pFCxps/bag.jpg"
   },
   {
     title: "Mountain Bike",
     desc: "Bikes, Helmets & More",
     icon: Bike,
-    img: "https://i.ibb.co.com/HDHNmD7f/bike.avif"
+    img: "https://i.ibb.co.com/tp5c8hTn/bike.jpg"
   },
   {
     title: "Kayak Set",
     desc: "Kayaks, Life Jackets & More",
     icon: Waves,
-    img: "https://i.ibb.co.com/ybzmLDR/kayakset.avif"
+    img: "https://i.ibb.co.com/3ybVJv5g/kayakset.jpg"
   },
   {
     title: "Hiking Boots",
     desc: "Skis, Snowboards & More",
     icon: Snowflake,
-    img: "https://i.ibb.co.com/nsZvm0XR/boots.avif"
+    img: "https://i.ibb.co.com/WpNz2CF0/boots.jpg"
   }
 ];
 

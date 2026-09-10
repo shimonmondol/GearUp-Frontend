@@ -20,6 +20,9 @@ import {
   Loader2,
   Calendar,
   ShoppingBag,
+  PackageX,
+  Search,
+  ArrowLeft,
 } from "lucide-react";
 
 const DEFAULT_PLACEHOLDER =
@@ -71,6 +74,19 @@ const extractProductImage = (item: any): string => {
   return DEFAULT_PLACEHOLDER;
 };
 
+// রিজার্ভড স্ট্যাটিক কি-ওয়ার্ড যা গিয়ার আইডি হতে পারে না
+const RESERVED_SLUGS = new Set([
+  "provider",
+  "customer",
+  "dashboard",
+  "new",
+  "addgear",
+  "admin",
+  "orders",
+  "pay",
+  "categories",
+]);
+
 export default function GearDetailsPage({
   params,
 }: {
@@ -78,11 +94,9 @@ export default function GearDetailsPage({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  
-  // Next.js 15 Client Component-এ params পাওয়ার সবচেয়ে নিরাপদ উপায়
   const routeParams = useParams();
-  const [currentId, setCurrentId] = useState<string>("");
 
+  const [currentId, setCurrentId] = useState<string>("");
   const [gear, setGear] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [notFound, setNotFound] = useState<boolean>(false);
@@ -93,24 +107,47 @@ export default function GearDetailsPage({
   const [bookingLoading, setBookingLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  // ID রেজলভ করা
+  // ১. প্যারামস রিজলভ করা
   useEffect(() => {
-    const resolveId = async () => {
+    let isMounted = true;
+
+    const resolveParams = async () => {
+      let extractedId = "";
+
       if (params) {
-        const p = await params;
-        if (p?.id) {
-          setCurrentId(p.id);
-          return;
+        try {
+          const resolved = await params;
+          if (resolved?.id) extractedId = resolved.id;
+        } catch {
+          // ignore error
         }
       }
-      if (routeParams?.id) {
-        setCurrentId(routeParams.id as string);
+
+      if (!extractedId && routeParams?.id) {
+        extractedId = Array.isArray(routeParams.id)
+          ? routeParams.id[0]
+          : (routeParams.id as string);
+      }
+
+      if (isMounted && extractedId) {
+        // যদি রিজার্ভড কোনো স্ট্যাটিক রাউটের নাম আসে, ফেচ না করে সরাসরি Not Found সেট করবে
+        if (RESERVED_SLUGS.has(extractedId.toLowerCase())) {
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+        setCurrentId(extractedId);
       }
     };
-    resolveId();
+
+    resolveParams();
+
+    return () => {
+      isMounted = false;
+    };
   }, [params, routeParams]);
 
-  // গিয়ার ডেটা ফেচ
+  // ২. গিয়ার ডেটা ফেচ
   useEffect(() => {
     if (!currentId) return;
 
@@ -119,7 +156,8 @@ export default function GearDetailsPage({
     const fetchGearDetails = async () => {
       try {
         setLoading(true);
-        // সেন্ট্রালাইজড Axios ক্লায়েন্ট ব্যবহার করা হচ্ছে
+        setError("");
+
         const res = await api.get(`/api/gear/${currentId}`);
         const json = res.data;
         const data = json?.data || json?.gear || json;
@@ -144,11 +182,13 @@ export default function GearDetailsPage({
       } catch (err: any) {
         console.error("Fetch gear error details:", err);
         if (isMounted) {
-          // কেবল 404 স্ট্যাটাস আসলেই Not Found দেখাবে, নেটওয়ার্ক ফেইলে নয়
           if (err.response?.status === 404) {
             setNotFound(true);
           } else {
-            toast.error("Could not reach backend server. Please verify your connection.");
+            toast.error(
+              err.response?.data?.message ||
+                "Could not reach backend server. Please verify your connection."
+            );
           }
         }
       } finally {
@@ -269,7 +309,9 @@ export default function GearDetailsPage({
       if (typeof errorData?.message === "string") {
         message = errorData.message;
       } else if (Array.isArray(errorData?.errorSources)) {
-        message = errorData.errorSources.map((s: any) => `${s.path}: ${s.message}`).join(", ");
+        message = errorData.errorSources
+          .map((s: any) => `${s.path}: ${s.message}`)
+          .join(", ");
       } else if (Array.isArray(errorData?.errors)) {
         message = errorData.errors.map((e: any) => e.message || e).join(", ");
       }
@@ -288,35 +330,71 @@ export default function GearDetailsPage({
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center gap-3 text-zinc-500 mt-10">
         <Loader2 className="w-9 h-9 animate-spin text-[#2e5328]" />
-        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Loading details...</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          Loading gear details...
+        </p>
       </div>
     );
   }
 
   if (notFound || !gear) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4 mt-20">
-        <h2 className="text-3xl font-extrabold text-zinc-900 mb-2">404 - Gear Not Found</h2>
-        <p className="text-xs text-zinc-500 max-w-sm mb-6">
-          The gear item you are looking for does not exist or has been removed.
-        </p>
-        <Link
-          href="/gear"
-          className="bg-[#2e5328] hover:bg-[#244220] text-white px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-sm"
-        >
-          Back to Gear Collection
-        </Link>
+      <div className="min-h-[75vh] flex items-center justify-center px-4 sm:px-6 mt-16">
+        <div className="max-w-md w-full text-center space-y-6 bg-white p-8 sm:p-10 rounded-3xl border border-zinc-200/80 shadow-sm">
+          <div className="w-16 h-16 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center mx-auto text-rose-500">
+            <PackageX className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="text-[11px] font-bold text-rose-600 bg-rose-100/60 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+              Item Unavailable
+            </span>
+            <h2 className="text-2xl font-black text-zinc-900 tracking-tight">
+              Gear Item Not Found
+            </h2>
+            <p className="text-xs text-zinc-500 leading-relaxed">
+              The equipment you are trying to view does not exist, has been removed by the provider, or the ID is invalid.
+            </p>
+          </div>
+
+          <div className="space-y-2.5 pt-2">
+            <Link
+              href="/gear"
+              className="w-full inline-flex items-center justify-center gap-2 bg-[#2e5328] hover:bg-[#244220] text-white py-3 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+            >
+              <Search className="w-4 h-4" />
+              <span>Explore Gear Catalog</span>
+            </Link>
+
+            <Link
+              href="/"
+              className="w-full inline-flex items-center justify-center gap-2 bg-zinc-100 hover:bg-zinc-200/70 text-zinc-700 py-3 rounded-xl text-xs font-bold transition cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Home</span>
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const categoryName = typeof gear.category === "object" ? gear.category?.name : gear.category || "Gear";
+  const categoryName =
+    typeof gear.category === "object"
+      ? gear.category?.name
+      : gear.category || "Gear";
 
   const specifications = [
     { label: "Brand", value: gear.brand || "Authentic" },
     { label: "Category", value: categoryName },
-    { label: "Availability", value: gear.isAvailable !== false ? "In Stock" : "Out of Stock" },
-    { label: "Stock Quantity", value: `${gear.stockQuantity ?? 1} Units available` },
+    {
+      label: "Availability",
+      value: gear.isAvailable !== false ? "In Stock" : "Out of Stock",
+    },
+    {
+      label: "Stock Quantity",
+      value: `${gear.stockQuantity ?? 1} Units available`,
+    },
     { label: "Rental Policy", value: "Verified ID & Standard Deposit" },
     { label: "Condition", value: "Inspected & Safety Checked" },
   ];
@@ -344,11 +422,15 @@ export default function GearDetailsPage({
             <Home className="w-3.5 h-3.5" /> Home
           </Link>
           <ChevronRight className="w-3.5 h-3.5" />
-          <Link href="/gear" className="hover:text-zinc-900">Gear</Link>
+          <Link href="/gear" className="hover:text-zinc-900">
+            Gear
+          </Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-zinc-600">{categoryName}</span>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-zinc-950 font-bold truncate max-w-50">{gear.title}</span>
+          <span className="text-zinc-950 font-bold truncate max-w-50">
+            {gear.title}
+          </span>
         </div>
       </div>
 
@@ -382,7 +464,11 @@ export default function GearDetailsPage({
                 onClick={() => setIsWishlisted(!isWishlisted)}
                 className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-zinc-700 hover:text-red-500 shadow-sm transition cursor-pointer"
               >
-                <Heart className={`w-4 h-4 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
+                <Heart
+                  className={`w-4 h-4 ${
+                    isWishlisted ? "fill-red-500 text-red-500" : ""
+                  }`}
+                />
               </button>
             </div>
           </div>
@@ -422,15 +508,22 @@ export default function GearDetailsPage({
                     className="bg-[#eff5ed]/80 border border-[#e1eee0] p-3 rounded-2xl flex flex-col items-center justify-center text-center"
                   >
                     <h.icon className="w-5 h-5 text-[#2e5328] mb-1" />
-                    <span className="text-xs font-extrabold text-zinc-900 leading-none">{h.label}</span>
-                    <span className="text-[10px] text-zinc-500 mt-0.5">{h.sub}</span>
+                    <span className="text-xs font-extrabold text-zinc-900 leading-none">
+                      {h.label}
+                    </span>
+                    <span className="text-[10px] text-zinc-500 mt-0.5">
+                      {h.sub}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Booking Form */}
-            <form onSubmit={handleRentNow} className="space-y-4 pt-4 border-t border-zinc-100">
+            <form
+              onSubmit={handleRentNow}
+              className="space-y-4 pt-4 border-t border-zinc-100"
+            >
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-semibold">
                   {error}
@@ -502,8 +595,12 @@ export default function GearDetailsPage({
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-7 bg-white border border-zinc-200/80 rounded-3xl p-6 sm:p-8 space-y-4">
-            <h3 className="text-base font-extrabold text-zinc-950">Product Description</h3>
-            <p className="text-xs text-zinc-600 leading-relaxed">{gear.description}</p>
+            <h3 className="text-base font-extrabold text-zinc-950">
+              Product Description
+            </h3>
+            <p className="text-xs text-zinc-600 leading-relaxed">
+              {gear.description}
+            </p>
             <ul className="space-y-2.5 pt-2">
               {[
                 "Full safety check and sanitization completed prior to handover",
@@ -520,12 +617,16 @@ export default function GearDetailsPage({
           </div>
 
           <div className="lg:col-span-5 bg-white border border-zinc-200/80 rounded-3xl p-6 sm:p-8 space-y-4">
-            <h3 className="text-base font-extrabold text-zinc-950">Specifications</h3>
+            <h3 className="text-base font-extrabold text-zinc-950">
+              Specifications
+            </h3>
             <div className="border border-zinc-100 rounded-2xl overflow-hidden text-xs divide-y divide-zinc-100">
               {specifications.map((spec, idx) => (
                 <div
                   key={idx}
-                  className={`grid grid-cols-2 p-3 ${idx % 2 === 0 ? "bg-[#fafbfa]" : "bg-white"}`}
+                  className={`grid grid-cols-2 p-3 ${
+                    idx % 2 === 0 ? "bg-[#fafbfa]" : "bg-white"
+                  }`}
                 >
                   <span className="font-semibold text-zinc-500">{spec.label}</span>
                   <span className="font-bold text-zinc-900">{spec.value}</span>
