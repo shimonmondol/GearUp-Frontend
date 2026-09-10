@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, use, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useParams } from "next/navigation";
 import Cookies from "js-cookie";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -32,9 +32,6 @@ const defaultHighlights = [
   { icon: ShieldCheck, label: "Durable", sub: "Tested" },
 ];
 
-const gearCache = new Map<string, any>();
-
-// শিমার প্লেসহোল্ডার (SVG Base64)
 const shimmer = (w: number, h: number) => `
 <svg width="${w}" height="${h}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
@@ -77,46 +74,54 @@ const extractProductImage = (item: any): string => {
 export default function GearDetailsPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params?: Promise<{ id: string }>;
 }) {
-  const resolvedParams = use(params);
   const router = useRouter();
   const pathname = usePathname();
-  const currentId = resolvedParams.id;
+  
+  // Next.js 15 Client Component-এ params পাওয়ার সবচেয়ে নিরাপদ উপায়
+  const routeParams = useParams();
+  const [currentId, setCurrentId] = useState<string>("");
 
-  const [gear, setGear] = useState<any | null>(() => gearCache.get(currentId) || null);
-  const [loading, setLoading] = useState<boolean>(() => !gearCache.has(currentId));
+  const [gear, setGear] = useState<any | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [notFound, setNotFound] = useState<boolean>(false);
   const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
-  const [imgSrc, setImgSrc] = useState<string>(() =>
-    gearCache.get(currentId) ? extractProductImage(gearCache.get(currentId)) : ""
-  );
+  const [imgSrc, setImgSrc] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [bookingLoading, setBookingLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
+  // ID রেজলভ করা
   useEffect(() => {
-    let isMounted = true;
+    const resolveId = async () => {
+      if (params) {
+        const p = await params;
+        if (p?.id) {
+          setCurrentId(p.id);
+          return;
+        }
+      }
+      if (routeParams?.id) {
+        setCurrentId(routeParams.id as string);
+      }
+    };
+    resolveId();
+  }, [params, routeParams]);
 
-    if (gearCache.has(currentId)) {
-      const cached = gearCache.get(currentId);
-      setGear(cached);
-      setImgSrc(extractProductImage(cached));
-      setLoading(false);
-      return;
-    }
+  // গিয়ার ডেটা ফেচ
+  useEffect(() => {
+    if (!currentId) return;
+
+    let isMounted = true;
 
     const fetchGearDetails = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`https://gear-up-beta.vercel.app/api/gear/${currentId}`, {
-          cache: "no-store",
-        });
-
-        if (!res.ok) throw new Error("Failed to fetch");
-
-        const json = await res.json();
+        // সেন্ট্রালাইজড Axios ক্লায়েন্ট ব্যবহার করা হচ্ছে
+        const res = await api.get(`/api/gear/${currentId}`);
+        const json = res.data;
         const data = json?.data || json?.gear || json;
 
         if (data && (data.id || data._id || data.title)) {
@@ -128,17 +133,24 @@ export default function GearDetailsPage({
             mainImage: finalImage,
           };
 
-          gearCache.set(currentId, formattedItem);
-
           if (isMounted) {
             setGear(formattedItem);
             setImgSrc(finalImage);
+            setNotFound(false);
           }
         } else if (isMounted) {
           setNotFound(true);
         }
-      } catch {
-        if (isMounted) setNotFound(true);
+      } catch (err: any) {
+        console.error("Fetch gear error details:", err);
+        if (isMounted) {
+          // কেবল 404 স্ট্যাটাস আসলেই Not Found দেখাবে, নেটওয়ার্ক ফেইলে নয়
+          if (err.response?.status === 404) {
+            setNotFound(true);
+          } else {
+            toast.error("Could not reach backend server. Please verify your connection.");
+          }
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -172,7 +184,6 @@ export default function GearDetailsPage({
     const token = Cookies.get("accessToken");
     const userRole = Cookies.get("userRole");
 
-    // ১. টোকেন না থাকলে লগইনে রিডাইরেক্ট
     if (!token) {
       toast.warning("Please login to rent gear", {
         position: "top-center",
@@ -184,7 +195,6 @@ export default function GearDetailsPage({
       return;
     }
 
-    // ২. স্কিমার Role enums অনুযায়ী ছোট হাতের কন্ডিশন চেক
     if (userRole && userRole.toLowerCase() === "provider") {
       const msg = "Providers cannot rent gear. Please login with a Customer account.";
       toast.error(msg, {
@@ -217,7 +227,6 @@ export default function GearDetailsPage({
     setBookingLoading(true);
 
     try {
-      // ৩. Prisma Schema অনুযায়ী তৈরি ক্লিন পেলোড
       const payload = {
         gearId: String(targetGearId),
         startDate: new Date(startDate).toISOString(),
@@ -238,7 +247,6 @@ export default function GearDetailsPage({
         ],
       };
 
-      // ৪. সরাসরি Bearer Token পাস করা হচ্ছে
       await api.post("/api/rentals", payload, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -250,7 +258,6 @@ export default function GearDetailsPage({
         autoClose: 1000,
       });
 
-      // ৫. সরাসরি কাস্টমার ড্যাশবোর্ডে রিডাইরেক্ট ও রিফ্রেশ
       setTimeout(() => {
         router.push("/dashboard/customer");
         router.refresh();
@@ -288,7 +295,7 @@ export default function GearDetailsPage({
 
   if (notFound || !gear) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
+      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4 mt-20">
         <h2 className="text-3xl font-extrabold text-zinc-900 mb-2">404 - Gear Not Found</h2>
         <p className="text-xs text-zinc-500 max-w-sm mb-6">
           The gear item you are looking for does not exist or has been removed.
