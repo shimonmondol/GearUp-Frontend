@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Cookies from 'js-cookie';
@@ -32,11 +32,7 @@ export default function CustomerDashboardPage() {
   const [comment, setComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  useEffect(() => {
-    fetchCustomerOrders();
-  }, []);
-
-  const fetchCustomerOrders = async () => {
+  const fetchCustomerOrders = useCallback(async () => {
     try {
       setLoading(true);
       const token = Cookies.get('accessToken');
@@ -47,12 +43,13 @@ export default function CustomerDashboardPage() {
         return;
       }
 
-      // ক্যাশ প্রতিরোধ করতে নো-ক্যাশ হেডার
-      const res = await api.get('/api/orders/my-orders', {
+      // ক্যাশ প্রতিরোধ করতে টাইমস্ট্যাম্প ও নো-ক্যাশ হেডার
+      const res = await api.get(`/api/orders/my-orders?t=${Date.now()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
-          'Cache-Control': 'no-cache',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
           Pragma: 'no-cache',
+          Expires: '0',
         },
       });
 
@@ -74,9 +71,13 @@ export default function CustomerDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Select All চেকবক্স হ্যান্ডলার (সব অর্ডার সিলেক্ট করা যাবে)
+  useEffect(() => {
+    fetchCustomerOrders();
+  }, [fetchCustomerOrders]);
+
+  // Select All চেকবক্স হ্যান্ডলার
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
       const allIds = orders.map((o) => o.id || o._id);
@@ -202,17 +203,17 @@ export default function CustomerDashboardPage() {
   const renderBadge = (status: string) => {
     switch (status) {
       case 'PLACED':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">PLACED</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">PLACED</span>;
       case 'CONFIRMED':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">CONFIRMED</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">CONFIRMED</span>;
       case 'PAID':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">PAID</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">PAID</span>;
       case 'PICKED_UP':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">PICKED UP</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200">PICKED UP</span>;
       case 'RETURNED':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-800">RETURNED</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-zinc-100 text-zinc-800 border border-zinc-200">RETURNED</span>;
       case 'CANCELLED':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">CANCELLED</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">CANCELLED</span>;
       default:
         return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-zinc-100 text-zinc-800">{status}</span>;
     }
@@ -265,8 +266,9 @@ export default function CustomerDashboardPage() {
 
       {/* Orders List Table */}
       {loading ? (
-        <div className="text-center py-24 text-zinc-400 text-xs font-semibold uppercase tracking-wider">
-          Loading your rental orders...
+        <div className="text-center py-24 text-zinc-400 text-xs font-semibold uppercase tracking-wider flex flex-col items-center justify-center gap-2">
+          <Loader2 className="w-5 h-5 animate-spin text-[#2e5328]" />
+          <span>Loading your rental orders...</span>
         </div>
       ) : orders.length === 0 ? (
         <div className="bg-white border border-zinc-200/80 rounded-2xl p-12 text-center text-zinc-500 shadow-xs">
@@ -328,6 +330,7 @@ export default function CustomerDashboardPage() {
                   const orderId = order.id || order._id;
                   const total = order.totalPrice || order.totalCost || order.amount || order.total || 0;
                   const isChecked = selectedOrderIds.includes(orderId);
+                  const orderStatus = (order.status || 'PLACED').toUpperCase();
 
                   return (
                     <tr
@@ -336,7 +339,6 @@ export default function CustomerDashboardPage() {
                         isChecked ? 'bg-emerald-50/40' : 'hover:bg-zinc-50/60'
                       }`}
                     >
-                      {/* যেকোনো স্ট্যাটাসেই সিলেক্ট চেকবক্স থাকবে */}
                       <td className="p-4 text-center">
                         <input
                           type="checkbox"
@@ -374,13 +376,13 @@ export default function CustomerDashboardPage() {
                       </td>
 
                       {/* স্ট্যাটাস কলাম */}
-                      <td className="p-4">{renderBadge(order.status || 'PLACED')}</td>
+                      <td className="p-4">{renderBadge(orderStatus)}</td>
 
                       {/* অ্যাকশনস কলাম */}
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {/* আনপেইড হলে Pay Now */}
-                          {(order.status === 'PLACED' || order.status === 'PENDING') && (
+                          {/* PLACED, PENDING বা CONFIRMED হলে Pay Now বাটন */}
+                          {['PLACED', 'PENDING', 'CONFIRMED'].includes(orderStatus) && (
                             <Link
                               href={`/dashboard/customer/orders/${orderId}/pay`}
                               className="bg-[#2e5328] hover:bg-[#244220] text-white text-xs font-bold px-3 py-1.5 rounded-lg inline-block transition shadow-xs"
@@ -389,15 +391,26 @@ export default function CustomerDashboardPage() {
                             </Link>
                           )}
 
+                          {/* CANCELLED হলে Retry Pay বাটন */}
+                          {orderStatus === 'CANCELLED' && (
+                            <Link
+                              href={`/dashboard/customer/orders/${orderId}/pay`}
+                              className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg inline-block transition shadow-xs"
+                            >
+                              Retry Pay 💳
+                            </Link>
+                          )}
+
                           {/* পেইড হলে সাকসেস ব্যাজ */}
-                          {order.status === 'PAID' && (
+                          {orderStatus === 'PAID' && (
                             <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              Payment Successful
+                              Paid
                             </span>
                           )}
 
-                          {order.status === 'RETURNED' && gearId && (
+                          {/* রিটার্নড হলে রিভিউ বাটন */}
+                          {orderStatus === 'RETURNED' && gearId && (
                             <button
                               onClick={() => handleOpenReview(gearId)}
                               className="bg-[#eff5ed] text-[#2e5328] border border-[#d8ecd3] hover:bg-[#e4efe2] text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition"
@@ -406,11 +419,14 @@ export default function CustomerDashboardPage() {
                             </button>
                           )}
 
-                          {order.status === 'PICKED_UP' && (
-                            <span className="text-xs text-green-700 font-bold">In Use</span>
+                          {/* গিয়ার পিকড আপ থাকলে In Use */}
+                          {orderStatus === 'PICKED_UP' && (
+                            <span className="text-xs text-green-700 font-bold bg-green-50 px-2 py-1 rounded-md border border-green-200">
+                              In Use
+                            </span>
                           )}
 
-                          {/* সব অর্ডারের জন্য (PAID হলেও) ডিলিট বাটন থাকবে */}
+                          {/* ডিলিট বাটন */}
                           <button
                             onClick={() => triggerSingleDelete(orderId)}
                             title="Delete Order"
