@@ -54,8 +54,14 @@ export default function NewGearPage() {
       router.push("/dashboard/provider");
       router.refresh();
     } catch (err: any) {
-      console.error("Gear create error:", err.response?.data);
-      toast.error(err.response?.data?.message || "Failed to list new gear");
+      console.error("Gear create error status:", err.response?.status);
+      console.error("Gear create error response:", err.response?.data);
+      const serverMessage = 
+        err.response?.data?.message || 
+        err.response?.data?.errors?.[0]?.message || 
+        err.message || 
+        "Failed to list new gear";
+      toast.error(serverMessage);
     } finally {
       setLoading(false);
     }
