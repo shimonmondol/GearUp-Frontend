@@ -19,12 +19,18 @@ import {
 import { toast } from "react-toastify";
 import api from "@/lib/axios";
 
+interface GearCategory {
+  id?: string;
+  name?: string;
+  slug?: string;
+}
+
 interface GearItem {
   id: string;
   title: string;
   pricePerDay: number;
   isAvailable: boolean;
-  category: string;
+  category?: string | GearCategory;
   images: string[];
 }
 
@@ -49,70 +55,47 @@ export default function ProviderDashboardPage() {
         return;
       }
 
-      // জটিল ক্যাশ হেডার বাদ দিন যা CORS ড্রপ করায়
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       };
 
-      // সরাসরি প্রাইমারি এন্ডপয়েন্টগুলোতে রিকোয়েস্ট পাঠান
-      const [gearRes, ordersRes] = await Promise.allSettled([
-        api.get(`/api/gear/my-gear?_t=${Date.now()}`, config),
-        api.get(`/api/orders/provider?_t=${Date.now()}`, config),
+      // দুটি রিকোয়েস্ট আলাদাভাবে ট্রাই-ক্যাচে সুরক্ষিত করা হয়েছে যাতে একটি 500 দিলেও পুরো ফাংশন ক্র্যাশ না করে
+      const [gearResult, ordersResult] = await Promise.allSettled([
+        api.get(`/api/provider/gear?_t=${Date.now()}`, config).then((r) => r.data),
+        api.get(`/api/provider/orders?_t=${Date.now()}`, config).then((r) => r.data),
       ]);
 
       let gearData: GearItem[] = [];
       let ordersData: any[] = [];
 
-      // 1. Gear Data Parsing
-      if (gearRes.status === "fulfilled") {
-        const rawGear = gearRes.value.data?.data || gearRes.value.data || [];
+      // ১. গিয়ার ডেটা পার্সিং
+      if (gearResult.status === "fulfilled") {
+        const rawGear = gearResult.value?.data || gearResult.value || [];
         gearData = Array.isArray(rawGear) ? rawGear : [];
         setGears(gearData);
       } else {
-        // আসল রুট এররটি কনসোলে পুরোপুরি এক্সপোজ করুন
-        console.error("❌ Provider Gear Fetch Error:", gearRes.reason);
-        console.log("Error Details:", {
-          message: gearRes.reason?.message,
-          code: gearRes.reason?.code,
-          status: gearRes.reason?.response?.status,
-          data: gearRes.reason?.response?.data,
-        });
+        console.warn("Provider Gear Fetch Warning:", gearResult.reason?.response?.data || gearResult.reason);
       }
 
-      // 2. Orders Data Parsing
-      if (ordersRes.status === "fulfilled") {
-        const rawOrders =
-          ordersRes.value.data?.data || ordersRes.value.data || [];
+      // ২. অর্ডার ডেটা পার্সিং (Orders API 500 দিলেও পেজ বন্ধ হবে না)
+      if (ordersResult.status === "fulfilled") {
+        const rawOrders = ordersResult.value?.data || ordersResult.value || [];
         ordersData = Array.isArray(rawOrders) ? rawOrders : [];
       } else {
-        console.error("❌ Provider Orders Fetch Error:", ordersRes.reason);
-        console.log("Error Details:", {
-          message: ordersRes.reason?.message,
-          code: ordersRes.reason?.code,
-          status: ordersRes.reason?.response?.status,
-          data: ordersRes.reason?.response?.data,
-        });
+        console.warn("Provider Orders Fetch Warning (Status 500):", ordersResult.reason?.response?.data || ordersResult.reason);
       }
 
-      if (gearRes.status === "rejected" && ordersRes.status === "rejected") {
-        const errorMsg =
-          (gearRes.reason as any)?.response?.data?.message ||
-          (gearRes.reason as any)?.message ||
-          "Failed to load dashboard information.";
-        toast.error(errorMsg);
-        return;
-      }
-
+      // মেট্রিক্স ক্যালকুলেশন
       const activeRentalsCount = ordersData.filter(
-        (o: any) => (o.status || "").toUpperCase() === "PICKED_UP",
+        (o: any) => (o.status || "").toUpperCase() === "PICKED_UP"
       ).length;
 
       const pendingOrdersCount = ordersData.filter(
         (o: any) =>
           (o.status || "").toUpperCase() === "PLACED" ||
-          (o.status || "").toUpperCase() === "PENDING",
+          (o.status || "").toUpperCase() === "PENDING"
       ).length;
 
       setStats({
@@ -120,6 +103,10 @@ export default function ProviderDashboardPage() {
         activeRentals: activeRentalsCount,
         pendingOrders: pendingOrdersCount,
       });
+
+      if (gearResult.status === "rejected" && ordersResult.status === "rejected") {
+        toast.error("Failed to load dashboard data. Please try again.");
+      }
     } catch (err) {
       console.error("Dashboard general runtime error:", err);
       toast.error("Failed to load dashboard information");
@@ -134,7 +121,7 @@ export default function ProviderDashboardPage() {
 
   const handleToggleAvailability = async (
     gearId: string,
-    currentStatus: boolean,
+    currentStatus: boolean
   ) => {
     setTogglingId(gearId);
     try {
@@ -142,18 +129,18 @@ export default function ProviderDashboardPage() {
       await api.patch(
         `/api/provider/gear/${gearId}`,
         { isAvailable: !currentStatus },
-        { headers: { Authorization: `Bearer ${token}` } },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       setGears((prev) =>
         prev.map((g) =>
-          g.id === gearId ? { ...g, isAvailable: !currentStatus } : g,
-        ),
+          g.id === gearId ? { ...g, isAvailable: !currentStatus } : g
+        )
       );
       toast.success("Stock status updated");
     } catch (err: any) {
       toast.error(
-        err.response?.data?.message || "Failed to update availability",
+        err.response?.data?.message || "Failed to update availability"
       );
     } finally {
       setTogglingId(null);
@@ -178,6 +165,15 @@ export default function ProviderDashboardPage() {
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to delete gear");
     }
+  };
+
+  // Helper ফাংশন: অবজেক্ট বা স্ট্রিং যেকোনো ক্যাটাগরি রেন্ডার করবে
+  const renderCategoryName = (category: string | GearCategory | undefined) => {
+    if (!category) return "General";
+    if (typeof category === "object") {
+      return category.name || category.slug || "General";
+    }
+    return String(category);
   };
 
   return (
@@ -284,8 +280,7 @@ export default function ProviderDashboardPage() {
         ) : gears.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-xs text-zinc-500 mb-2">
-              No inventory found. Click &quot;Add Gear&quot; to publish
-              listings.
+              No inventory found. Click &quot;Add Gear&quot; to publish listings.
             </p>
             <Link
               href="/dashboard/provider/addgear"
@@ -330,7 +325,7 @@ export default function ProviderDashboardPage() {
                       </div>
                     </td>
                     <td className="py-3 px-2 text-zinc-600">
-                      {gear.category || "General"}
+                      {renderCategoryName(gear.category)}
                     </td>
                     <td className="py-3 px-2 font-medium">
                       ৳{gear.pricePerDay}
