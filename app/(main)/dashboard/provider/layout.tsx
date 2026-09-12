@@ -47,19 +47,16 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
 
   const navItems = [
     { label: 'Overview & Inventory', href: '/dashboard/provider', icon: LayoutDashboard },
-    { label: 'Add Gear', href: '/dashboard/provider/gear/new', icon: PlusCircle },
+    { label: 'Add Gear', href: '/dashboard/provider/addgear', icon: PlusCircle },
     { label: 'Manage Orders', href: '/dashboard/provider/orders', icon: ShoppingBag },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col md:flex-row font-sans mt-18">
       {/* Sidebar */}
       <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200 p-5 flex flex-col justify-between shrink-0">
         <div className="space-y-6">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded">
-              Provider Hub
-            </span>
             <h1 className="text-xl font-bold text-slate-900 mt-2">Equipment Rental</h1>
           </div>
 

@@ -61,7 +61,7 @@ export default function ProviderDashboardPage() {
         },
       };
 
-      // দুটি রিকোয়েস্ট আলাদাভাবে ট্রাই-ক্যাচে সুরক্ষিত করা হয়েছে যাতে একটি 500 দিলেও পুরো ফাংশন ক্র্যাশ না করে
+      // দুটি রিকোয়েস্ট আলাদাভাবে ট্রাই-ক্যাচে সুরক্ষিত
       const [gearResult, ordersResult] = await Promise.allSettled([
         api.get(`/api/provider/gear?_t=${Date.now()}`, config).then((r) => r.data),
         api.get(`/api/provider/orders?_t=${Date.now()}`, config).then((r) => r.data),
@@ -76,27 +76,33 @@ export default function ProviderDashboardPage() {
         gearData = Array.isArray(rawGear) ? rawGear : [];
         setGears(gearData);
       } else {
-        console.warn("Provider Gear Fetch Warning:", gearResult.reason?.response?.data || gearResult.reason);
+        console.warn(
+          "Provider Gear Fetch Warning:",
+          gearResult.reason?.response?.data || gearResult.reason
+        );
       }
 
-      // ২. অর্ডার ডেটা পার্সিং (Orders API 500 দিলেও পেজ বন্ধ হবে না)
+      // ২. অর্ডার ডেটা পার্সিং
       if (ordersResult.status === "fulfilled") {
         const rawOrders = ordersResult.value?.data || ordersResult.value || [];
         ordersData = Array.isArray(rawOrders) ? rawOrders : [];
       } else {
-        console.warn("Provider Orders Fetch Warning (Status 500):", ordersResult.reason?.response?.data || ordersResult.reason);
+        console.warn(
+          "Provider Orders Fetch Warning (Status 500):",
+          ordersResult.reason?.response?.data || ordersResult.reason
+        );
       }
 
-      // মেট্রিক্স ক্যালকুলেশন
-      const activeRentalsCount = ordersData.filter(
-        (o: any) => (o.status || "").toUpperCase() === "PICKED_UP"
-      ).length;
+      // 🎯 Active Rentals: শুধুমাত্র PAID স্ট্যাটাস থাকা অর্ডারগুলো গণনা হবে
+      const activeRentalsCount = ordersData.filter((o: any) => {
+        return (o.status || "").toUpperCase() === "PAID";
+      }).length;
 
-      const pendingOrdersCount = ordersData.filter(
-        (o: any) =>
-          (o.status || "").toUpperCase() === "PLACED" ||
-          (o.status || "").toUpperCase() === "PENDING"
-      ).length;
+      // 🎯 Pending Orders: PLACED অথবা PENDING স্ট্যাটাস
+      const pendingOrdersCount = ordersData.filter((o: any) => {
+        const s = (o.status || "").toUpperCase();
+        return s === "PLACED" || s === "PENDING";
+      }).length;
 
       setStats({
         totalGear: gearData.length,
@@ -167,7 +173,7 @@ export default function ProviderDashboardPage() {
     }
   };
 
-  // Helper ফাংশন: অবজেক্ট বা স্ট্রিং যেকোনো ক্যাটাগরি রেন্ডার করবে
+  // Helper ফাংশন: ক্যাটাগরি অবজেক্ট হলেও ক্র্যাশ হতে দেবে না
   const renderCategoryName = (category: string | GearCategory | undefined) => {
     if (!category) return "General";
     if (typeof category === "object") {
@@ -177,9 +183,9 @@ export default function ProviderDashboardPage() {
   };
 
   return (
-    <div className="space-y-6 mt-20 max-w-7xl mx-auto px-4 sm:px-6">
+    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">
             Provider Dashboard
@@ -214,6 +220,7 @@ export default function ProviderDashboardPage() {
 
       {/* Metrics Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Total Gear Listed */}
         <div className="bg-white p-5 border border-zinc-200 rounded-2xl flex items-center gap-4 shadow-sm">
           <div className="p-3 bg-zinc-100 rounded-xl text-[#285724]">
             <Package className="w-6 h-6" />
@@ -228,6 +235,7 @@ export default function ProviderDashboardPage() {
           </div>
         </div>
 
+        {/* Pending Orders */}
         <Link
           href="/dashboard/provider/orders"
           className="bg-white p-5 border border-zinc-200 rounded-2xl flex items-center gap-4 shadow-sm hover:border-amber-300 transition group"
@@ -248,17 +256,24 @@ export default function ProviderDashboardPage() {
           </div>
         </Link>
 
-        <div className="bg-white p-5 border border-zinc-200 rounded-2xl flex items-center gap-4 shadow-sm">
+        {/* 👈 Active Rentals (ক্লিক করলে ?status=PAID ফিল্টার করা অর্ডারে নিয়ে যাবে) */}
+        <Link
+          href="/dashboard/provider/orders?status=PAID"
+          className="bg-white p-5 border border-zinc-200 rounded-2xl flex items-center gap-4 shadow-sm hover:border-emerald-300 transition group"
+        >
           <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
             <CheckCircle className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-xs text-zinc-500 font-medium">Active Rentals</p>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-zinc-500 font-medium">Active Rentals</p>
+              <ExternalLink className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-600 transition" />
+            </div>
             <h3 className="text-2xl font-bold text-zinc-900">
               {stats.activeRentals}
             </h3>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Inventory Quick Preview & Actions */}
@@ -306,7 +321,7 @@ export default function ProviderDashboardPage() {
                   <tr key={gear.id} className="hover:bg-zinc-50/60 transition">
                     <td className="py-3 px-2">
                       <div className="flex items-center gap-3">
-                        <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-zinc-100 flex-shrink-0 border border-zinc-200">
+                        <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-zinc-100 shrink-0 border border-zinc-200">
                           {gear.images?.[0] ? (
                             <Image
                               src={gear.images[0]}
@@ -319,7 +334,7 @@ export default function ProviderDashboardPage() {
                             <Package className="w-5 h-5 text-zinc-400 absolute inset-0 m-auto" />
                           )}
                         </div>
-                        <span className="font-semibold text-zinc-900 line-clamp-1 max-w-[200px] sm:max-w-xs">
+                        <span className="font-semibold text-zinc-900 line-clamp-1 max-w-50 sm:max-w-xs">
                           {gear.title}
                         </span>
                       </div>
