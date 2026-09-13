@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Loader2,
   RefreshCw,
+  Pencil,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "@/lib/axios";
@@ -63,8 +64,12 @@ export default function ProviderDashboardPage() {
 
       // দুটি রিকোয়েস্ট আলাদাভাবে ট্রাই-ক্যাচে সুরক্ষিত
       const [gearResult, ordersResult] = await Promise.allSettled([
-        api.get(`/api/provider/gear?_t=${Date.now()}`, config).then((r) => r.data),
-        api.get(`/api/provider/orders?_t=${Date.now()}`, config).then((r) => r.data),
+        api
+          .get(`/api/provider/gear?_t=${Date.now()}`, config)
+          .then((r) => r.data),
+        api
+          .get(`/api/provider/orders?_t=${Date.now()}`, config)
+          .then((r) => r.data),
       ]);
 
       let gearData: GearItem[] = [];
@@ -78,7 +83,7 @@ export default function ProviderDashboardPage() {
       } else {
         console.warn(
           "Provider Gear Fetch Warning:",
-          gearResult.reason?.response?.data || gearResult.reason
+          gearResult.reason?.response?.data || gearResult.reason,
         );
       }
 
@@ -89,7 +94,7 @@ export default function ProviderDashboardPage() {
       } else {
         console.warn(
           "Provider Orders Fetch Warning (Status 500):",
-          ordersResult.reason?.response?.data || ordersResult.reason
+          ordersResult.reason?.response?.data || ordersResult.reason,
         );
       }
 
@@ -110,7 +115,10 @@ export default function ProviderDashboardPage() {
         pendingOrders: pendingOrdersCount,
       });
 
-      if (gearResult.status === "rejected" && ordersResult.status === "rejected") {
+      if (
+        gearResult.status === "rejected" &&
+        ordersResult.status === "rejected"
+      ) {
         toast.error("Failed to load dashboard data. Please try again.");
       }
     } catch (err) {
@@ -127,7 +135,7 @@ export default function ProviderDashboardPage() {
 
   const handleToggleAvailability = async (
     gearId: string,
-    currentStatus: boolean
+    currentStatus: boolean,
   ) => {
     setTogglingId(gearId);
     try {
@@ -135,18 +143,18 @@ export default function ProviderDashboardPage() {
       await api.patch(
         `/api/provider/gear/${gearId}`,
         { isAvailable: !currentStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       setGears((prev) =>
         prev.map((g) =>
-          g.id === gearId ? { ...g, isAvailable: !currentStatus } : g
-        )
+          g.id === gearId ? { ...g, isAvailable: !currentStatus } : g,
+        ),
       );
       toast.success("Stock status updated");
     } catch (err: any) {
       toast.error(
-        err.response?.data?.message || "Failed to update availability"
+        err.response?.data?.message || "Failed to update availability",
       );
     } finally {
       setTogglingId(null);
@@ -266,7 +274,9 @@ export default function ProviderDashboardPage() {
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
-              <p className="text-xs text-zinc-500 font-medium">Active Rentals</p>
+              <p className="text-xs text-zinc-500 font-medium">
+                Active Rentals
+              </p>
               <ExternalLink className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-600 transition" />
             </div>
             <h3 className="text-2xl font-bold text-zinc-900">
@@ -295,7 +305,8 @@ export default function ProviderDashboardPage() {
         ) : gears.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-xs text-zinc-500 mb-2">
-              No inventory found. Click &quot;Add Gear&quot; to publish listings.
+              No inventory found. Click &quot;Add Gear&quot; to publish
+              listings.
             </p>
             <Link
               href="/dashboard/provider/addgear"
@@ -367,13 +378,22 @@ export default function ProviderDashboardPage() {
                       </button>
                     </td>
                     <td className="py-3 px-2 text-right">
-                      <button
-                        onClick={() => handleDeleteGear(gear.id)}
-                        className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                        title="Delete listing"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link
+                          href={`/dashboard/provider/editgear/${gear.id}`}
+                          className="p-1.5 text-zinc-400 hover:text-[#285724] hover:bg-emerald-50 rounded-lg transition"
+                          title="Edit listing"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Link>
+                        <button
+                          onClick={() => handleDeleteGear(gear.id)}
+                          className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                          title="Delete listing"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
