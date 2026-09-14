@@ -30,7 +30,6 @@ export default function EditGearPage({ params }: EditGearProps) {
     isAvailable: true,
   });
 
-  // আগের গিয়ার ডাটা লোড করা
   useEffect(() => {
     const fetchGearDetails = async () => {
       try {
@@ -183,7 +182,6 @@ export default function EditGearPage({ params }: EditGearProps) {
               >
                 <option value="Camping">Camping</option>
                 <option value="Fitness">Fitness</option>
-                <option value="Hiking">Hiking</option>
                 <option value="Cycling">Cycling</option>
               </select>
             </div>

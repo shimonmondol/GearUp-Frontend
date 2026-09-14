@@ -43,7 +43,6 @@ export default function CustomerDashboardPage() {
         return;
       }
 
-      // ক্যাশ প্রতিরোধ করতে টাইমস্ট্যাম্প ও নো-ক্যাশ হেডার
       const res = await api.get(`/api/orders/my-orders?t=${Date.now()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -77,7 +76,6 @@ export default function CustomerDashboardPage() {
     fetchCustomerOrders();
   }, [fetchCustomerOrders]);
 
-  // Select All চেকবক্স হ্যান্ডলার
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
       const allIds = orders.map((o) => o.id || o._id);
@@ -87,28 +85,24 @@ export default function CustomerDashboardPage() {
     }
   };
 
-  // সিঙ্গেল রো সিলেকশন
   const handleSelectOne = (orderId: string) => {
     setSelectedOrderIds((prev) =>
       prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId]
     );
   };
 
-  // সিঙ্গেল ডিলিট পপআপ
   const triggerSingleDelete = (orderId: string) => {
     setIsBulkDeleteModal(false);
     setOrderToDelete(orderId);
     setDeleteModalOpen(true);
   };
 
-  // বাল্ক ডিলিট পপআপ
   const triggerBulkDelete = () => {
     if (selectedOrderIds.length === 0) return;
     setIsBulkDeleteModal(true);
     setDeleteModalOpen(true);
   };
 
-  // ডিলিট কনফার্মেশন এক্সিকিউটর
   const handleConfirmDelete = async () => {
     const token = Cookies.get('accessToken');
     const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -374,14 +368,9 @@ export default function CustomerDashboardPage() {
                       <td className="p-4 font-black text-sm text-[#2e5328]">
                         ৳ {Number(total).toLocaleString()}
                       </td>
-
-                      {/* স্ট্যাটাস কলাম */}
                       <td className="p-4">{renderBadge(orderStatus)}</td>
-
-                      {/* অ্যাকশনস কলাম */}
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {/* PLACED, PENDING বা CONFIRMED হলে Pay Now বাটন */}
                           {['PLACED', 'PENDING', 'CONFIRMED'].includes(orderStatus) && (
                             <Link
                               href={`/dashboard/customer/orders/${orderId}/pay`}
@@ -390,8 +379,6 @@ export default function CustomerDashboardPage() {
                               Pay Now 💳
                             </Link>
                           )}
-
-                          {/* CANCELLED হলে Retry Pay বাটন */}
                           {orderStatus === 'CANCELLED' && (
                             <Link
                               href={`/dashboard/customer/orders/${orderId}/pay`}
@@ -400,16 +387,12 @@ export default function CustomerDashboardPage() {
                               Retry Pay 💳
                             </Link>
                           )}
-
-                          {/* পেইড হলে সাকসেস ব্যাজ */}
                           {orderStatus === 'PAID' && (
                             <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                               Paid
                             </span>
                           )}
-
-                          {/* রিটার্নড হলে রিভিউ বাটন */}
                           {orderStatus === 'RETURNED' && gearId && (
                             <button
                               onClick={() => handleOpenReview(gearId)}
@@ -418,15 +401,11 @@ export default function CustomerDashboardPage() {
                               Leave Review ⭐
                             </button>
                           )}
-
-                          {/* গিয়ার পিকড আপ থাকলে In Use */}
                           {orderStatus === 'PICKED_UP' && (
                             <span className="text-xs text-green-700 font-bold bg-green-50 px-2 py-1 rounded-md border border-green-200">
                               In Use
                             </span>
                           )}
-
-                          {/* ডিলিট বাটন */}
                           <button
                             onClick={() => triggerSingleDelete(orderId)}
                             title="Delete Order"

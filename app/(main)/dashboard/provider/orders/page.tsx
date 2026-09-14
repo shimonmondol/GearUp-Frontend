@@ -21,9 +21,7 @@ interface RentalOrder {
 
 function OrdersTableContent() {
   const searchParams = useSearchParams();
-  // URL চেক করবে ?status=PAID দেওয়া আছে কি না
   const isPaidView = searchParams.get('status')?.toUpperCase() === 'PAID';
-
   const [orders, setOrders] = useState<RentalOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -36,10 +34,6 @@ function OrdersTableContent() {
 
       const res = await api.get(`/api/provider/orders?_t=${Date.now()}`, config);
       const allOrders: RentalOrder[] = res.data?.data || [];
-
-      // 🎯 ফিল্টারিং লজিক:
-      // Active Rentals থেকে আসলে (?status=PAID) -> শুধু PAID দেখাবে
-      // সাধারণ Manage Orders পেজে থাকলে -> PAID ছাড়া বাকি সব দেখাবে
       const filtered = isPaidView
         ? allOrders.filter((order) => (order.status || '').toUpperCase() === 'PAID')
         : allOrders.filter((order) => (order.status || '').toUpperCase() !== 'PAID');
@@ -65,12 +59,9 @@ function OrdersTableContent() {
       await api.patch(`/api/provider/orders/${orderId}`, { status: nextStatus }, config);
       toast.success(`Order marked as ${nextStatus}`);
 
-      // ভিউ অনুযায়ী লিস্ট থেকে স্বয়ংক্রিয়ভাবে আপডেট বা রিমুভ করা
       if (isPaidView) {
-        // Active Rentals ভিউতে কোনো অর্ডার Picked Up হয়ে গেলে লিস্ট থেকে সরে যাবে
         setOrders((prev) => prev.filter((ord) => ord.id !== orderId));
       } else {
-        // রেগুলার ভিউতে কোনো অর্ডার PAID হয়ে গেলে রেগুলার লিস্ট থেকে সরে যাবে
         if (nextStatus === 'PAID') {
           setOrders((prev) => prev.filter((ord) => ord.id !== orderId));
         } else {
@@ -240,7 +231,6 @@ function OrdersTableContent() {
   );
 }
 
-// Next.js useSearchParams এর জন্য Suspense Wrapper
 export default function ProviderOrdersPage() {
   return (
     <Suspense

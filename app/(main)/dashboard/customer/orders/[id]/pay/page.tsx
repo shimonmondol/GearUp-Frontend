@@ -41,8 +41,6 @@ export default function OrderPaymentPage({
 
   const handleCheckout = async () => {
     setPaying(true);
-
-    // ব্যাকএন্ডের ভিন্ন ভ্যালিডেশনের সাথে মিল রাখার জন্য সম্ভাব্য সব ফিল্ড পাঠানো
     const payload = {
       rentalOrderId: orderId,
       rentalId: orderId,
@@ -57,17 +55,14 @@ export default function OrderPaymentPage({
       console.log('Payment Gateway API Response:', res.data);
 
       const resData = res.data?.data || res.data;
-
-      // বিভিন্ন পেমেন্ট গেটওয়ের রিটার্ন করা URL ফিল্ড ক্যাচ করা
       const redirectUrl =
         resData?.paymentUrl ||
-        resData?.GatewayPageURL || // SSLCommerz sandbox/live URL
-        resData?.url ||            // Stripe checkout session URL
+        resData?.GatewayPageURL || 
+        resData?.url ||            
         resData?.redirectUrl ||
         resData?.checkoutUrl;
 
       if (redirectUrl) {
-        // বাহ্যিক পেমেন্ট গেটওয়ে পেজে রিডাইরেক্ট
         window.location.href = redirectUrl;
       } else {
         console.error('No redirect URL property found in response:', res.data);

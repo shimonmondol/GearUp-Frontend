@@ -74,7 +74,6 @@ const extractProductImage = (item: any): string => {
   return DEFAULT_PLACEHOLDER;
 };
 
-// রিজার্ভড স্ট্যাটিক কি-ওয়ার্ড যা গিয়ার আইডি হতে পারে না
 const RESERVED_SLUGS = new Set([
   "provider",
   "customer",
@@ -107,7 +106,6 @@ export default function GearDetailsPage({
   const [bookingLoading, setBookingLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  // ১. প্যারামস রিজলভ করা
   useEffect(() => {
     let isMounted = true;
 
@@ -130,7 +128,6 @@ export default function GearDetailsPage({
       }
 
       if (isMounted && extractedId) {
-        // যদি রিজার্ভড কোনো স্ট্যাটিক রাউটের নাম আসে, ফেচ না করে সরাসরি Not Found সেট করবে
         if (RESERVED_SLUGS.has(extractedId.toLowerCase())) {
           setNotFound(true);
           setLoading(false);
@@ -147,7 +144,6 @@ export default function GearDetailsPage({
     };
   }, [params, routeParams]);
 
-  // ২. গিয়ার ডেটা ফেচ
   useEffect(() => {
     if (!currentId) return;
 

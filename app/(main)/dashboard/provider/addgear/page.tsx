@@ -10,8 +10,6 @@ import api from "@/lib/axios";
 export default function NewGearPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-
-  // ✅ স্টেটের ভেতরে brand ও stockQuantity ডিফাইন করা হয়েছে
   const [form, setForm] = useState({
     title: "",
     description: "",

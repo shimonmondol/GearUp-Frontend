@@ -62,7 +62,6 @@ export default function ProviderDashboardPage() {
         },
       };
 
-      // দুটি রিকোয়েস্ট আলাদাভাবে ট্রাই-ক্যাচে সুরক্ষিত
       const [gearResult, ordersResult] = await Promise.allSettled([
         api
           .get(`/api/provider/gear?_t=${Date.now()}`, config)
@@ -75,7 +74,6 @@ export default function ProviderDashboardPage() {
       let gearData: GearItem[] = [];
       let ordersData: any[] = [];
 
-      // ১. গিয়ার ডেটা পার্সিং
       if (gearResult.status === "fulfilled") {
         const rawGear = gearResult.value?.data || gearResult.value || [];
         gearData = Array.isArray(rawGear) ? rawGear : [];
@@ -87,7 +85,6 @@ export default function ProviderDashboardPage() {
         );
       }
 
-      // ২. অর্ডার ডেটা পার্সিং
       if (ordersResult.status === "fulfilled") {
         const rawOrders = ordersResult.value?.data || ordersResult.value || [];
         ordersData = Array.isArray(rawOrders) ? rawOrders : [];
@@ -98,12 +95,10 @@ export default function ProviderDashboardPage() {
         );
       }
 
-      // 🎯 Active Rentals: শুধুমাত্র PAID স্ট্যাটাস থাকা অর্ডারগুলো গণনা হবে
       const activeRentalsCount = ordersData.filter((o: any) => {
         return (o.status || "").toUpperCase() === "PAID";
       }).length;
 
-      // 🎯 Pending Orders: PLACED অথবা PENDING স্ট্যাটাস
       const pendingOrdersCount = ordersData.filter((o: any) => {
         const s = (o.status || "").toUpperCase();
         return s === "PLACED" || s === "PENDING";
@@ -181,7 +176,6 @@ export default function ProviderDashboardPage() {
     }
   };
 
-  // Helper ফাংশন: ক্যাটাগরি অবজেক্ট হলেও ক্র্যাশ হতে দেবে না
   const renderCategoryName = (category: string | GearCategory | undefined) => {
     if (!category) return "General";
     if (typeof category === "object") {
@@ -263,8 +257,6 @@ export default function ProviderDashboardPage() {
             </h3>
           </div>
         </Link>
-
-        {/* 👈 Active Rentals (ক্লিক করলে ?status=PAID ফিল্টার করা অর্ডারে নিয়ে যাবে) */}
         <Link
           href="/dashboard/provider/orders?status=PAID"
           className="bg-white p-5 border border-zinc-200 rounded-2xl flex items-center gap-4 shadow-sm hover:border-emerald-300 transition group"

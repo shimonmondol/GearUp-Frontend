@@ -16,7 +16,6 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
     const userRole = localStorage.getItem('user_role'); 
     if (userRole !== 'provider') {
       setIsAuthorized(false);
-      // router.push('/login'); // Uncomment for direct redirect
     } else {
       setIsAuthorized(true);
     }
