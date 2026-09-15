@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛒 Gearup Rental
 
-## Getting Started
+GearUp is a full-stack sports equipment rental platform built a seamless booking lifecycle secured by role-based authentication, allowing users to easily browse, rent, and manage sporting gear.
 
-First, run the development server:
+A comprehensive admin dashboard ensures platform integrity by providing tools for global metrics tracking, inventory moderation, safe order cancellations with automatic stock restoration, and user account suspension.
+
+## 🌐 Live Demo
+
+https://gear-up-frontend-rosy.vercel.app
+
+## 📂 Repository
+
+https://github.com/shimonmondol/GearUp-Frontend
+
+## ✨ Main Features
+
+- 🔐 Multi-Role Authentication & Access Control (Customer, Provider, Admin)
+- 👤 User Profile & Account Settings
+- ⚽ Sports Equipment Catalog & Detailed View
+- 🔍 Live Search & Filter (by Category, Brand, & Daily Rate)
+- 📅 Equipment Booking & Date-Based Rental System
+- 💳 Secure Checkout & Payment Processing
+- 📦 Full Order Lifecycle Tracking (Placed to Returned)
+- 📊 Provider Dashboard for Inventory & Listing Management
+- 🛠️ Centralized Admin Dashboard (Global Metrics & User Moderation)
+- 🛡️ Account Moderation with Confirmation Modal (Suspend/Activate Users)
+- 🔄 Automated Stock Restoration on Cancellations
+- 📱 Fully Responsive & Mobile-Friendly Layout
+
+## 🛠️ Tech Stack
+
+### Frontend
+
+- Next.js (App Router)
+- TypeScript
+- Tailwind CSS
+- Axios
+- Lucide React
+- React Toastify
+- js-cookie
+
+### Backend
+
+- Node.js
+- Express.js
+- PostgreSQL
+- Prisma ORM
+- JSON Web Token (JWT)
+- bcrypt
+
+### Tools
+
+- Git & GitHub
+- Postman
+- Vite
+- VS Code
+
+## ⚙️ Installation
+
+### Clone Repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/shimonmondol/GearUp-Frontend
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+cd GearUp-Frontend
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Install Frontend
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cd client
+npm install
+npm run dev
+```
 
-## Learn More
+### Install Backend
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+cd server
+npm install
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📄 License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This project is licensed under the Author License.
 
-## Deploy on Vercel
+## 👨‍💻 Author
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Shimon Mondol**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- GitHub: https://github.com/shimonmondol
+- LinkedIn: https://www.linkedin.com/in/shimon-mondol/
+- Portfolio: https://shimondev.netlify.app/
+
+⭐ If you like this project, don't forget to give it a star!

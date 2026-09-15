@@ -15,6 +15,12 @@ import {
   Loader2,
 } from 'lucide-react';
 
+const clearAuthCookies = () => {
+  Cookies.remove('accessToken');
+  Cookies.remove('userRole');
+  Cookies.remove('userName');
+};
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,7 +51,7 @@ function LoginForm() {
       const role = user?.role || resData?.role || 'CUSTOMER';
 
       if (!token) {
-        throw new Error('Token missing');
+        throw new Error('Invalid email or password');
       }
 
       // Save credentials in Cookies
@@ -65,9 +71,23 @@ function LoginForm() {
         router.refresh();
       }, 2000);
     } catch (err: any) {
+      // Clear any invalid credentials or stale cookies
+      clearAuthCookies();
+
       console.error('Login Error Details:', err);
-      const errorMsg =
-        err?.response?.data?.message || err?.message || 'Login Failed';
+
+      const status = err?.response?.status;
+      let errorMsg = 'Invalid email or password';
+
+      // 400 (Bad Request), 401 (Unauthorized), or 404 (Not Found) হলে জেনেরিক নিরাপদ মেসেজ
+      if (status === 400 || status === 401 || status === 404) {
+        errorMsg = 'Invalid email or password';
+      } else if (err?.response?.data?.message) {
+        errorMsg = err.response.data.message;
+      } else if (err?.message) {
+        errorMsg = err.message;
+      }
+
       toast.error(errorMsg, {
         position: 'top-center',
         autoClose: 3000,
@@ -157,7 +177,7 @@ export default function LoginPage() {
           <p className="text-xs text-zinc-500">Welcome back! Please enter your details.</p>
         </div>
 
-        {/* Suspense Wrapper to prevent Next.js build-time prerendering failure */}
+        {/* Suspense Wrapper */}
         <Suspense
           fallback={
             <div className="py-12 flex justify-center items-center">
