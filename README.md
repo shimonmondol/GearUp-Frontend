@@ -10,8 +10,8 @@ https://gear-up-frontend-rosy.vercel.app
 
 ## 📂 Repository
 
-* Frontend: [https://github.com/shimonmondol/GearUp-Frontend](https://www.google.com/url?sa=E&source=gmail&q=https://github.com/shimonmondol/GearUp-Frontend)
-* Backend: [https://github.com/shimonmondol/GearUp-Backend](https://www.google.com/search?q=https://github.com/shimonmondol/GearUp-Backend)
+* Frontend: https://github.com/shimonmondol/GearUp-Frontend
+* Backend: https://github.com/shimonmondol/GearUp-Backend
 
 ## ✨ Main Features
 
