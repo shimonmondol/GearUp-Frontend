@@ -21,19 +21,31 @@ const testimonials = [
 
 export const Testimonials = () => {
   return (
-    <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="bg-white dark:bg-gray-900">
+      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="text-center mb-10">
-        <span className="text-xs font-bold text-[#3b663b] tracking-wider uppercase">What Adventurers Say</span>
+        <span className="text-xs font-bold text-[#3b663b] dark:text-[#5fa352] tracking-wider uppercase">
+          What Adventurers Say
+        </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {testimonials.map((item, idx) => (
-          <div key={idx} className="relative bg-white border border-zinc-100 p-6 rounded-2xl shadow-sm space-y-4">
-            <Quote className="absolute top-6 right-6 w-8 h-8 text-zinc-200" />
+          <div
+            key={idx}
+            className="relative bg-white dark:bg-gray-800 border border-zinc-100 dark:border-zinc-800 p-6 rounded-2xl shadow-sm dark:shadow-none space-y-4 transition-colors duration-300"
+          >
+            <Quote className="absolute top-6 right-6 w-8 h-8 text-zinc-200 dark:text-zinc-700/60" />
             <div className="flex items-center gap-3">
-              <img src={item.avatar} alt={item.name} className="w-12 h-12 rounded-full object-cover border border-zinc-200" />
+              <img
+                src={item.avatar}
+                alt={item.name}
+                className="w-12 h-12 rounded-full object-cover border border-zinc-200 dark:border-zinc-700"
+              />
               <div>
-                <h4 className="font-bold text-zinc-900 text-sm">{item.name}</h4>
+                <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">
+                  {item.name}
+                </h4>
                 <div className="flex text-amber-400 gap-0.5 mt-0.5">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
@@ -41,17 +53,20 @@ export const Testimonials = () => {
                 </div>
               </div>
             </div>
-            <p className="text-zinc-600 text-xs leading-relaxed italic">"{item.review}"</p>
+            <p className="text-zinc-600 dark:text-zinc-400 text-xs leading-relaxed italic">
+              "{item.review}"
+            </p>
           </div>
         ))}
       </div>
 
       <div className="flex justify-center items-center gap-1.5 mt-8">
-        <span className="w-2 h-2 rounded-full bg-[#3b663b]"></span>
-        <span className="w-2 h-2 rounded-full bg-zinc-300"></span>
-        <span className="w-2 h-2 rounded-full bg-zinc-300"></span>
-        <span className="w-2 h-2 rounded-full bg-zinc-300"></span>
+        <span className="w-2 h-2 rounded-full bg-[#3b663b] dark:bg-[#5fa352]"></span>
+        <span className="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
+        <span className="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
+        <span className="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
       </div>
     </section>
+    </div>
   );
 };
