@@ -106,7 +106,7 @@ function LoginForm() {
     let creds = { email: '', password: '' };
 
     if (role === 'CUSTOMER') {
-      creds = { email: 'customer1@gearup.com', password: 'securePassword123' };
+      creds = { email: 'shimonmondol10@gmail.com', password: '12345678' };
     } else if (role === 'PROVIDER') {
       creds = { email: 'shimon.dev@example.com', password: 'securePassword123' };
     } else if (role === 'ADMIN') {
