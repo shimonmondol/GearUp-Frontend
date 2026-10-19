@@ -4,7 +4,7 @@ import Image from "next/image";
 
 export const PromoBanner = () => {
   return (
-    <div className="bg-white dark:bg-gray-900">
+    <div className="bg-white dark:bg-gray-900 pt-20">
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-colors duration-300">
         <div className="relative bg-linear-to-r from-[#eff6ed] via-[#f5f9f3] to-[#e4eee1] dark:from-gray-800 dark:via-gray-800/90 dark:to-gray-800 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden border border-[#d8e6d4] dark:border-gray-700 shadow-xs">
           {/* Left Content */}

@@ -28,7 +28,7 @@ export const Process = () => {
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-900 transition-colors duration-300">
+    <div className="bg-white dark:bg-gray-900 transition-colors duration-300 pt-10">
       <section className="py-14 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-colors duration-300">
         {/* Section Header */}
         <div className="max-w-2xl mb-12 space-y-2">
@@ -95,7 +95,6 @@ export const Process = () => {
                     {item.desc}
                   </p>
                 </div>
-
                 <div className="mt-4 pt-3 border-t border-[#d8e6d4]/70 dark:border-gray-700/80 flex items-center justify-between text-[11px] font-semibold text-zinc-500 dark:text-gray-400 group-hover:text-[#3b663b] dark:group-hover:text-[#5fa352] transition-colors">
                   <span>Step {i + 1} of 4</span>
                   <span className="text-xs">➔</span>

@@ -16,7 +16,7 @@ export const Newsletter = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 transition-colors duration-300 pb-6">
+    <div className="bg-white dark:bg-gray-900 transition-colors duration-300 pt-6 pb-8">
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 transition-colors duration-300">
         <div className="relative bg-linear-to-r from-[#eff6ed] via-[#f5f9f3] to-[#e4eee1] dark:from-gray-800 dark:via-gray-800/90 dark:to-gray-800 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden border border-[#d8e6d4] dark:border-gray-700 shadow-xs transition-colors">
           {/* Left Side: Icon, Badge, Title & Copy */}

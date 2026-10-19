@@ -37,7 +37,7 @@ const categories = [
 
 export const Categories = () => {
   return (
-    <div className="bg-white dark:bg-gray-900 transition-colors duration-300">
+    <div className="bg-white dark:bg-gray-900 transition-colors duration-300 pt-10">
       <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-colors duration-300">
         <div className="text-center space-y-2 mb-10">
           <span className="text-xs font-bold text-[#3b663b] dark:text-[#5fa352] tracking-wider uppercase">
