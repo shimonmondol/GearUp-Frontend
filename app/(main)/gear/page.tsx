@@ -232,7 +232,7 @@ export default function GearPage() {
             <div className="absolute inset-0 bg-white/70 dark:bg-gray-950/80 backdrop-blur-[2px] transition-colors duration-300"></div>
 
             <div className="relative z-10 max-w-2xl space-y-3">
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-gray-50">
+              <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-gray-50">
                 Explore <span className="text-[#2e5328] dark:text-[#5fa352]">Gear</span> Collection
               </h1>
               <p className="text-zinc-600 dark:text-gray-300 text-xs sm:text-sm leading-relaxed">

@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import {
   ArrowRight,
   Tent,
@@ -37,7 +38,7 @@ const categories = [
 export const Categories = () => {
   return (
     <div className="bg-white dark:bg-gray-900 transition-colors duration-300">
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 transition-colors duration-300">
+      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-colors duration-300">
         <div className="text-center space-y-2 mb-10">
           <span className="text-xs font-bold text-[#3b663b] dark:text-[#5fa352] tracking-wider uppercase">
             Popular Categories
@@ -77,10 +78,10 @@ export const Categories = () => {
         </div>
 
         <div className="flex justify-center mt-10">
-          <button className="flex items-center gap-2 bg-[#3b663b] hover:bg-[#315531] text-white px-6 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer shadow-sm">
-            <span>View All Categories</span>
+          <Link href="/gear" className="flex items-center gap-2 bg-[#3b663b] hover:bg-[#315531] text-white px-6 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer shadow-sm">
+            <span>View All Gears</span>
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </Link>
         </div>
       </section>
     </div>

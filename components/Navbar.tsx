@@ -35,7 +35,6 @@ const Navbar = () => {
     }
   }, [pathname]);
 
-  // বাইরে ক্লিক করলে ড্রপডাউন বন্ধ করার হ্যান্ডলার
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -94,7 +93,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed w-full z-20 top-0 left-0 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors duration-200">
+    <nav className="fixed w-full z-20 top-0 left-0 bg-white/95 dark:bg-gray-900 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-4">
           {/* Brand Logo */}
@@ -167,6 +166,21 @@ const Navbar = () => {
                 >
                   Home
                   {isActive("/") && (
+                    <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#477a3d] dark:bg-[#5fa352] rounded-full" />
+                  )}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/about"
+                  className={`block font-semibold text-sm transition-colors focus:outline-none relative py-1 ${
+                    isActive("/about")
+                      ? "text-[#477a3d] dark:text-[#5fa352]"
+                      : "text-gray-700 dark:text-gray-300 hover:text-[#477a3d] dark:hover:text-[#5fa352]"
+                  }`}
+                >
+                  About
+                  {isActive("/about") && (
                     <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#477a3d] dark:bg-[#5fa352] rounded-full" />
                   )}
                 </Link>
@@ -301,6 +315,20 @@ const Navbar = () => {
                   }`}
                 >
                   Home
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/about"
+                  onClick={closeMenu}
+                  className={`block px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                    isActive("/")
+                      ? "bg-[#477a3d]/10 text-[#477a3d] dark:text-[#5fa352]"
+                      : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  About
                 </Link>
               </li>
 

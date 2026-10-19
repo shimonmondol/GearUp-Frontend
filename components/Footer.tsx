@@ -1,13 +1,12 @@
-import React from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { Phone, Mail, MapPin } from "lucide-react";
-import { FaFacebookF, FaInstagram, FaYoutube, FaTwitter } from "react-icons/fa";
+import { FaFacebookF, FaGithub, FaLinkedin } from "react-icons/fa";
 
 export const Footer = () => {
   return (
-    <footer className="bg-white text-gray-900 dark:bg-gray-950 dark:text-zinc-100 pt-16 pb-8 text-xs transition-colors duration-200">
+    <footer className="border-t border-gray-200 dark:border-zinc-800 bg-white text-gray-900 dark:bg-gray-900 dark:text-zinc-100 pt-10 pb-8 text-xs transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-12 border-b border-gray-200 dark:border-zinc-800">
-        
         {/* Brand & Social */}
         <div className="space-y-4 lg:col-span-1">
           <div className="flex items-center gap-1">
@@ -21,32 +20,25 @@ export const Footer = () => {
           </p>
           <div className="flex items-center gap-3">
             <a
-              href="#"
+              href="https://www.facebook.com/shimon.mondol"
               aria-label="Facebook"
               className="w-7 h-7 rounded-full bg-gray-100 hover:bg-[#3b663b] text-gray-700 hover:text-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-[#3b663b] dark:hover:text-white flex items-center justify-center transition"
             >
               <FaFacebookF className="w-3.5 h-3.5" />
             </a>
             <a
-              href="#"
-              aria-label="Instagram"
+              href="https://github.com/shimonmondol"
+              aria-label="Github"
               className="w-7 h-7 rounded-full bg-gray-100 hover:bg-[#3b663b] text-gray-700 hover:text-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-[#3b663b] dark:hover:text-white flex items-center justify-center transition"
             >
-              <FaInstagram className="w-3.5 h-3.5" />
+              <FaGithub className="w-3.5 h-3.5" />
             </a>
             <a
-              href="#"
-              aria-label="YouTube"
+              href="https://www.linkedin.com/in/shimon-mondol"
+              aria-label="Linkedin"
               className="w-7 h-7 rounded-full bg-gray-100 hover:bg-[#3b663b] text-gray-700 hover:text-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-[#3b663b] dark:hover:text-white flex items-center justify-center transition"
             >
-              <FaYoutube className="w-3.5 h-3.5" />
-            </a>
-            <a
-              href="#"
-              aria-label="Twitter"
-              className="w-7 h-7 rounded-full bg-gray-100 hover:bg-[#3b663b] text-gray-700 hover:text-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-[#3b663b] dark:hover:text-white flex items-center justify-center transition"
-            >
-              <FaTwitter className="w-3.5 h-3.5" />
+              <FaLinkedin className="w-3.5 h-3.5" />
             </a>
           </div>
         </div>
@@ -58,27 +50,34 @@ export const Footer = () => {
           </h4>
           <ul className="space-y-2 text-gray-600 dark:text-zinc-400">
             <li>
-              <a href="#" className="hover:text-gray-900 dark:hover:text-white transition">
-                How It Works
+              <a
+                href="/"
+                className="hover:text-gray-900 dark:hover:text-white transition"
+              >
+                Home
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-gray-900 dark:hover:text-white transition">
-                Browse Equipment
+              <a
+                href="/gear"
+                className="hover:text-gray-900 dark:hover:text-white transition"
+              >
+                Browse Gear
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-gray-900 dark:hover:text-white transition">
-                Categories
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-gray-900 dark:hover:text-white transition">
+              <a
+                href="/about"
+                className="hover:text-gray-900 dark:hover:text-white transition"
+              >
                 About Us
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-gray-900 dark:hover:text-white transition">
+              <a
+                href="/contact"
+                className="hover:text-gray-900 dark:hover:text-white transition"
+              >
                 Contact Us
               </a>
             </li>
@@ -90,31 +89,38 @@ export const Footer = () => {
           <h4 className="text-gray-900 dark:text-white font-bold tracking-wider uppercase text-[11px]">
             Customer Service
           </h4>
-          <ul className="space-y-2 text-gray-600 dark:text-zinc-400">
+          <ul className="space-y-2 text-gray-600 dark:text-zinc-400 text-xs">
             <li>
-              <a href="#" className="hover:text-gray-900 dark:hover:text-white transition">
-                FAQs
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-gray-900 dark:hover:text-white transition">
+              <Link
+                href="/help/delivery-pickup"
+                className="hover:text-gray-900 dark:hover:text-white transition"
+              >
                 Delivery & Pickup
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#" className="hover:text-gray-900 dark:hover:text-white transition">
+              <Link
+                href="/help/returns-refunds"
+                className="hover:text-gray-900 dark:hover:text-white transition"
+              >
                 Returns & Refunds
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#" className="hover:text-gray-900 dark:hover:text-white transition">
+              <Link
+                href="/help/terms-conditions"
+                className="hover:text-gray-900 dark:hover:text-white transition"
+              >
                 Terms & Conditions
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#" className="hover:text-gray-900 dark:hover:text-white transition">
+              <Link
+                href="/help/privacy-policy"
+                className="hover:text-gray-900 dark:hover:text-white transition"
+              >
                 Privacy Policy
-              </a>
+              </Link>
             </li>
           </ul>
         </div>
