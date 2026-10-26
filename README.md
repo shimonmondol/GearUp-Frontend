@@ -13,7 +13,15 @@ https://gear-up-frontend-rosy.vercel.app
 * Frontend: https://github.com/shimonmondol/GearUp-Frontend
 * Backend: https://github.com/shimonmondol/GearUp-Backend
 
-## ✨ Main Features
+## Main Features
+
+- Browse & filter outdoor gear by category & daily rental rates
+- View gear details and specs on dedicated product pages
+- Book rental dates and complete secure online payments through an integrated gateway
+- Track order lifecycle stages from confirmation to pickup and return
+- Manage listings, toggle inventory stock, and monitor active rentals via the provider dashboard
+
+## ✨ Core Features
 
 - 🔐 Multi-Role Authentication & Access Control (Customer, Provider, Admin)
 - 👤 User Profile & Account Settings
